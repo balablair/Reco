@@ -26,7 +26,7 @@ public final class AppViewModel {
     public var playbackState: PlaybackState = .paused
     public var playbackPositionSeconds: Double = 0
     public var recordingElapsedSeconds: Int = 0
-    private var elapsedTimer: Timer?
+    @ObservationIgnored private var elapsedTimer: Timer?
 
     public init(
         captureService: any ScreenCaptureServicing = ScreenCaptureService(),
@@ -334,6 +334,9 @@ public final class AppViewModel {
         latestRecording = nil
         recordingElapsedSeconds = 0
         exportState = .idle
+        playbackState = .paused
+        playbackPositionSeconds = 0
+        exportSheetPresented = false
         phase = .preparation
     }
 
@@ -344,9 +347,7 @@ public final class AppViewModel {
     private func startElapsedTimer() {
         recordingElapsedSeconds = 0
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.recordingElapsedSeconds += 1
-            }
+            self?.recordingElapsedSeconds += 1
         }
     }
 

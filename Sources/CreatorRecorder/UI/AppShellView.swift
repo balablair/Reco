@@ -34,8 +34,7 @@ struct AppShellView: View {
         case .editing:
             EditorScreenView(viewModel: viewModel)
         default:
-            EditorScreenView(viewModel: viewModel)
-                .hidden()
+            Color.clear
         }
     }
 }
