@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(160,200,255,0.45) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 30%, rgba(180,220,190,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse at 55% 85%, rgba(220,200,255,0.25) 0%, transparent 45%),
+      linear-gradient(150deg, #c5daf0 0%, #d2e8d4 45%, #dcd4f0 100%);
+    min-height: 100vh;
+    padding: 52px;
+    color: rgba(0,0,0,0.85);
+  }
+
+  /* ────────── SVG ICON HELPERS ────────── */
+  .ic {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; line-height: 0;
+  }
+  .ic svg { display: block; }
+
+  /* ────────── LIQUID GLASS MATERIAL ────────── */
+  .glass {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(40px) saturate(2.0) brightness(1.04);
+    -webkit-backdrop-filter: blur(40px) saturate(2.0) brightness(1.04);
+    border: 1px solid rgba(255,255,255,0.90);
+    border-bottom-color: rgba(0,0,0,0.08);
+    border-right-color: rgba(0,0,0,0.05);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.95),
+      inset 0 -0.5px 0 rgba(0,0,0,0.06),
+      0 2px 12px rgba(0,0,0,0.08),
+      0 8px 40px rgba(0,0,0,0.07);
+  }
+
+  .glass-hud {
+    background: rgba(28,28,30,0.78);
+    backdrop-filter: blur(40px) saturate(1.8) brightness(0.9);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8) brightness(0.9);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-top-color: rgba(255,255,255,0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -0.5px 0 rgba(0,0,0,0.25),
+      0 4px 20px rgba(0,0,0,0.28),
+      0 1px 4px rgba(0,0,0,0.18);
+  }
+
+  .section {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.09em; color: rgba(0,0,0,0.30);
+    margin-bottom: 12px; margin-top: 44px;
+  }
+
+  /* ────────── PREP BAR ────────── */
+  .prep-bar {
+    display: inline-flex; align-items: center;
+    gap: 10px; padding: 11px 12px 11px 20px;
+    border-radius: 100px;
+  }
+
+  .pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pip-green { background: #28cd41; box-shadow: 0 0 0 2.5px rgba(40,205,65,0.20); }
+  .pip-red   { background: #ff3b30; box-shadow: 0 0 0 2.5px rgba(255,59,48,0.20);
+               animation: blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .bar-info { flex:1; min-width:0; }
+  .bar-title { font-size: 13px; font-weight: 570; color: rgba(0,0,0,0.85); letter-spacing: -0.015em; line-height: 1.25; }
+  .bar-sub   { font-size: 11px; color: rgba(0,0,0,0.38); margin-top: 1.5px; }
+
+  .sep {
+    width: 1px; height: 22px; flex-shrink: 0; margin: 0 6px;
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.12), transparent);
+  }
+  .sep-hud {
+    width: 1px; height: 20px; flex-shrink: 0; margin: 0 4px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.20), transparent);
+  }
+
+  /* Toggle chips */
+  .tag {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 6px 13px; border-radius: 100px;
+    font-size: 12px; font-weight: 440;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    letter-spacing: -0.01em; transition: background 0.12s;
+  }
+  .tag.on {
+    background: rgba(0,0,0,0.08); border: 0.5px solid rgba(0,0,0,0.11);
+    color: rgba(0,0,0,0.75); box-shadow: inset 0 0.5px 0 rgba(0,0,0,0.06);
+  }
+  .tag.off {
+    background: transparent; border: 0.5px solid transparent;
+    color: rgba(0,0,0,0.28);
+  }
+  /* icon-only: fixed-size chip — all equal */
+  .tag.ic-chip {
+    width: 34px; height: 34px; padding: 0; gap: 0; border-radius: 100px;
+    flex-shrink: 0;
+  }
+
+  .btn-text {
+    padding: 6px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 450;
+    background: transparent; border: none;
+    color: rgba(0,0,0,0.55); cursor: pointer; flex-shrink: 0;
+    letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  .btn-cta {
+    padding: 9px 22px; border-radius: 100px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 7px;
+    letter-spacing: -0.015em;
+    background: rgba(0,0,0,0.82); color: rgba(255,255,255,0.95);
+    border: 0.5px solid rgba(0,0,0,0.70);
+    box-shadow:
+      inset 0 0.5px 0 rgba(255,255,255,0.10),
+      0 1px 3px rgba(0,0,0,0.22), 0 3px 10px rgba(0,0,0,0.12);
+  }
+
+  /* ────────── REC HUD ────────── */
+  .rec-hud {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 10px 18px; border-radius: 100px;
+  }
+  .rec-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700; color: #ff453a; letter-spacing: 0.05em;
+  }
+  .rec-timer {
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.82);
+    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  }
+  .tag-hud {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 450;
+    background: rgba(255,255,255,0.12); border: 0.5px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.75); white-space: nowrap;
+  }
+  .btn-stop {
+    padding: 7px 18px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.90); color: rgba(0,0,0,0.78);
+    border: 0.5px solid rgba(255,255,255,0.70); cursor: pointer;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.95), 0 1px 3px rgba(0,0,0,0.22);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  /* ────────── COMPLETION CARD ────────── */
+  .comp-card { border-radius: 16px; padding: 16px; width: 310px; }
+  .thumb {
+    width: 100%; height: 80px; border-radius: 10px;
+    background: rgba(0,0,0,0.04); border: 0.5px solid rgba(0,0,0,0.09);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 11px;
+  }
+  .play-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(0,0,0,0.07); border: 0.5px solid rgba(0,0,0,0.13);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .file-meta {
+    font-size: 11.5px; color: rgba(0,0,0,0.38);
+    margin-bottom: 11px; display: flex; gap: 8px; align-items: center;
+  }
+  .file-name-row {
+    font-size: 13px; font-weight: 550; color: rgba(0,0,0,0.82);
+    margin-bottom: 3px; letter-spacing: -0.01em;
+  }
+  .comp-actions { display: flex; flex-direction: column; gap: 10px; }
+  .comp-row { display: flex; gap: 6px; }
+  .comp-btn {
+    flex: 1; padding: 10px 6px; border-radius: 100px;
+    font-size: 12px; font-weight: 450; text-align: center; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: rgba(0,0,0,0.05); border: 0.5px solid rgba(0,0,0,0.10);
+    color: rgba(0,0,0,0.60); white-space: nowrap;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.80);
+  }
+  .comp-btn.primary {
+    padding: 11px 8px;
+    background: rgba(0,0,0,0.82); color: rgba(255,255,255,0.95);
+    border-color: rgba(0,0,0,0.70); font-weight: 600; font-size: 13px;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.10), 0 1px 4px rgba(0,0,0,0.22);
+    gap: 7px;
+  }
+
+  /* ────────── DESKTOP MOCKUPS ────────── */
+  .mocks { display: flex; gap: 18px; max-width: 960px; }
+  .mock-col { flex: 1; }
+  .desktop {
+    position: relative; border-radius: 14px; overflow: hidden; height: 296px;
+    background:
+      radial-gradient(ellipse at 25% 45%, rgba(160,200,255,0.40) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(170,220,180,0.30) 0%, transparent 45%),
+      linear-gradient(150deg, #c8dcf0 0%, #d4e9d6 55%, #dcd4f0 100%);
+    border: 1px solid rgba(255,255,255,0.70);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .menubar {
+    position: absolute; top: 0; left: 0; right: 0; height: 22px;
+    background: rgba(255,255,255,0.28);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid rgba(255,255,255,0.45);
+    display: flex; align-items: center; padding: 0 10px; gap: 14px;
+  }
+  .menubar-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(0,0,0,0.25); }
+  .menubar-item { font-size: 9px; color: rgba(0,0,0,0.55); font-weight: 500; }
+  .menubar-right { margin-left: auto; display: flex; gap: 10px; }
+  .dc { position: absolute; inset: 22px 0 0; padding: 12px; display:flex; flex-direction:column; gap:8px; }
+  .dr { display:flex; gap:8px; }
+  .db {
+    border-radius: 8px;
+    background: rgba(255,255,255,0.48);
+    border: 0.5px solid rgba(255,255,255,0.78);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .rec-outline {
+    position: absolute; inset: 22px 0 0;
+    border: 1.5px solid rgba(255,59,48,0.50);
+    border-radius: 0 0 8px 8px; pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(255,59,48,0.08);
+  }
+  .float-bottom { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); white-space:nowrap; }
+  .float-top    { position:absolute; top:30px; left:50%; transform:translateX(-50%); white-space:nowrap; }
+  .float-br     { position:absolute; bottom:12px; right:12px; }
+  .mock-label {
+    text-align:center; font-size:10px; color:rgba(0,0,0,0.30);
+    margin-top:8px; letter-spacing: 0.02em;
+  }
+
+  hr { border: none; border-top: 1px solid rgba(0,0,0,0.07); margin: 52px 0; }
+</style>
+
+<!-- ── SVG icon defs (reference once, use anywhere) ── -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- camera.fill -->
+    <symbol id="ic-camera" viewBox="0 0 20 16">
+      <path d="M10 11.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+      <path fill-rule="evenodd" d="M7.25 1a1 1 0 0 0-.894.553L5.618 3H2a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3.618l-.738-1.447A1 1 0 0 0 12.75 1h-5.5Zm2.75 4a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" clip-rule="evenodd"/>
+    </symbol>
+
+    <!-- text.alignleft (teleprompter) -->
+    <symbol id="ic-teleprompter" viewBox="0 0 18 14">
+      <rect x="0" y="0"  width="18" height="2" rx="1"/>
+      <rect x="0" y="4"  width="14" height="2" rx="1"/>
+      <rect x="0" y="8"  width="16" height="2" rx="1"/>
+      <rect x="0" y="12" width="10" height="2" rx="1"/>
+    </symbol>
+
+    <!-- mic.fill -->
+    <symbol id="ic-mic" viewBox="0 0 12 20">
+      <rect x="3" y="0" width="6" height="12" rx="3"/>
+      <path d="M0 9a6 6 0 0 0 12 0" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <line x1="6" y1="15" x2="6" y2="19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="3" y1="19" x2="9" y2="19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- record.circle.fill — the red recording dot -->
+    <symbol id="ic-record" viewBox="0 0 14 14">
+      <circle cx="7" cy="7" r="7"/>
+    </symbol>
+
+    <!-- stop.fill -->
+    <symbol id="ic-stop" viewBox="0 0 12 12">
+      <rect x="1" y="1" width="10" height="10" rx="2.5"/>
+    </symbol>
+
+    <!-- scissors -->
+    <symbol id="ic-trim" viewBox="0 0 20 20">
+      <circle cx="4"  cy="4"  r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <circle cx="4"  cy="16" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <line x1="6.1" y1="5.9" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="6.1" y1="14.1" x2="12" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="13"  y1="7"  x2="18" y2="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- arrow.counterclockwise (redo) -->
+    <symbol id="ic-redo" viewBox="0 0 18 18">
+      <path d="M3.5 9a5.5 5.5 0 1 0 5.5-5.5H6" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="3,5.5 6,3.5 6,7.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+
+    <!-- square.and.arrow.up (share) -->
+    <symbol id="ic-share" viewBox="0 0 16 20">
+      <path d="M8 1 L8 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <polyline points="4,5 8,1 12,5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M3 8H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- play.fill -->
+    <symbol id="ic-play" viewBox="0 0 12 14">
+      <path d="M1 1.5 L11 7 L1 12.5 Z"/>
+    </symbol>
+
+    <!-- selection rectangle (pick area) -->
+    <symbol id="ic-pick" viewBox="0 0 18 18">
+      <path d="M1 5V3a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M13 1h2a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M17 13v2a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M5 17H3a2 2 0 0 1-2-2v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- arrow.right (open in studio, no box) -->
+    <symbol id="ic-studio" viewBox="0 0 18 14">
+      <path d="M1 7h15M10 1l6 6-6 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+</head>
+<body>
+
+<div style="font-size:15px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px;">CreatorRecorder</div>
+<div style="font-size:12px;color:rgba(0,0,0,0.32);margin-bottom:0;">macOS native · Liquid Glass · SF Pro</div>
+
+<!-- ════════════════════════════════════
+     IN-CONTEXT MOCKUPS  (first)
+════════════════════════════════════ -->
+<div class="section" style="margin-top:36px;">In context — macOS Sequoia desktop</div>
+<div class="mocks">
+
+  <!-- Preparation -->
+  <div class="mock-col">
+    <div class="desktop">
+      <div class="menubar">
+        <div class="menubar-dot"></div><div class="menubar-dot"></div><div class="menubar-dot"></div>
+        <div class="menubar-item" style="margin-left:6px;font-weight:600;">Finder</div>
+        <div class="menubar-item">File</div><div class="menubar-item">Edit</div>
+        <div class="menubar-right"><div class="menubar-item">Wi-Fi</div><div class="menubar-item">10:24</div></div>
+      </div>
+      <div class="dc">
+        <div class="dr"><div class="db" style="height:40px;flex:2"></div><div class="db" style="height:40px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:50px;flex:1"></div><div class="db" style="height:50px;flex:3"></div></div>
+        <div class="dr"><div class="db" style="height:32px;flex:1"></div><div class="db" style="height:32px;flex:1"></div><div class="db" style="height:32px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:32px;flex:2"></div><div class="db" style="height:32px;flex:1"></div></div>
+      </div>
+      <div class="float-bottom">
+        <div class="prep-bar glass" style="transform:scale(0.72);transform-origin:bottom center;width:570px;padding:9px 9px 9px 15px;">
+          <div class="pip pip-green"></div>
+          <div style="font-size:11px;font-weight:500;color:rgba(0,0,0,0.55);flex-shrink:0;">1280 × 720</div>
+          <div class="sep"></div>
+          <div class="tag on ic-chip">
+            <svg width="14" height="14" viewBox="0 0 20 16"><use href="#ic-camera"/></svg>
+          </div>
+          <div class="tag off ic-chip">
+            <svg width="14" height="14" viewBox="0 0 18 14"><use href="#ic-teleprompter"/></svg>
+          </div>
+          <div class="tag on ic-chip">
+            <svg width="14" height="14" viewBox="0 0 12 20"><use href="#ic-mic"/></svg>
+          </div>
+          <div class="tag off ic-chip">
+            <svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="rgba(0,0,0,0.30)" stroke-width="1.5"><use href="#ic-pick"/></svg>
+          </div>
+          <div class="sep"></div>
+          <div class="btn-cta" style="font-size:12px;padding:7px 14px;gap:6px;border-radius:100px;">
+            <svg width="9" height="9" viewBox="0 0 14 14" fill="rgba(255,255,255,0.9)"><use href="#ic-record"/></svg>
+            Record
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">① Preparation · bar floats at bottom</div>
+  </div>
+
+  <!-- Recording -->
+  <div class="mock-col">
+    <div class="desktop">
+      <div class="menubar">
+        <div class="menubar-dot"></div><div class="menubar-dot"></div><div class="menubar-dot"></div>
+        <div class="menubar-item" style="margin-left:6px;font-weight:600;">Finder</div>
+        <div class="menubar-item">File</div><div class="menubar-item">Edit</div>
+        <div class="menubar-right"><div class="menubar-item">Wi-Fi</div><div class="menubar-item">10:26</div></div>
+      </div>
+      <div class="dc">
+        <div class="dr"><div class="db" style="height:40px;flex:2"></div><div class="db" style="height:40px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:50px;flex:1"></div><div class="db" style="height:50px;flex:3"></div></div>
+        <div class="dr"><div class="db" style="height:32px;flex:1"></div><div class="db" style="height:32px;flex:1"></div><div class="db" style="height:32px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:32px;flex:2"></div><div class="db" style="height:32px;flex:1"></div></div>
+      </div>
+      <div class="rec-outline"></div>
+      <div class="float-top">
+        <div class="rec-hud glass-hud" style="transform:scale(0.84);transform-origin:top center;">
+          <div class="rec-label"><div class="pip pip-red"></div>REC</div>
+          <div class="rec-timer">02:47</div>
+          <div class="sep-hud"></div>
+          <div class="btn-stop" style="font-size:11.5px;padding:5px 12px;">
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="rgba(0,0,0,0.75)"><use href="#ic-stop"/></svg>
+            Stop
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">② Recording · HUD at top + red outline</div>
+  </div>
+
+  <!-- Completion -->
+  <div class="mock-col">
+    <div class="desktop">
+      <div class="menubar">
+        <div class="menubar-dot"></div><div class="menubar-dot"></div><div class="menubar-dot"></div>
+        <div class="menubar-item" style="margin-left:6px;font-weight:600;">Finder</div>
+        <div class="menubar-item">File</div><div class="menubar-item">Edit</div>
+        <div class="menubar-right"><div class="menubar-item">Wi-Fi</div><div class="menubar-item">10:29</div></div>
+      </div>
+      <div class="dc">
+        <div class="dr"><div class="db" style="height:40px;flex:2"></div><div class="db" style="height:40px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:50px;flex:1"></div><div class="db" style="height:50px;flex:3"></div></div>
+        <div class="dr"><div class="db" style="height:32px;flex:1"></div><div class="db" style="height:32px;flex:1"></div><div class="db" style="height:32px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:32px;flex:2"></div><div class="db" style="height:32px;flex:1"></div></div>
+      </div>
+      <div class="float-br">
+        <div class="comp-card glass" style="transform:scale(0.72);transform-origin:bottom right;width:278px;padding:12px;border-radius:18px;">
+          <div class="thumb" style="height:62px;margin-bottom:9px;">
+            <div class="play-btn">
+              <svg width="10" height="12" viewBox="0 0 12 14" fill="rgba(0,0,0,0.55)"><use href="#ic-play"/></svg>
+            </div>
+          </div>
+          <div style="font-size:10.5px;color:rgba(0,0,0,0.45);margin-bottom:8px;display:flex;gap:6px;"><span>02:47</span><span style="color:rgba(0,0,0,0.18)">·</span><span>284 MB</span></div>
+          <div class="comp-actions" style="gap:5px;">
+            <div class="comp-row" style="gap:5px;">
+              <div class="comp-btn" style="font-size:11.5px;padding:7px 5px;">
+                <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"><use href="#ic-redo"/></svg>
+                Redo
+              </div>
+              <div class="comp-btn" style="font-size:11.5px;padding:7px 5px;">
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"><use href="#ic-trim"/></svg>
+                Trim
+              </div>
+              <div class="comp-btn" style="font-size:11.5px;padding:7px 5px;">
+                <svg width="11" height="13" viewBox="0 0 16 20" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"><use href="#ic-share"/></svg>
+                Share
+              </div>
+            </div>
+            <div class="comp-btn primary" style="font-size:12px;padding:8px;">Open in Studio →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">③ Done · result card at bottom-right</div>
+  </div>
+
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════
+     COMPONENT DETAIL
+════════════════════════════════════ -->
+<div class="section" style="margin-top:0;">① Preparation bar</div>
+<div class="prep-bar glass">
+  <div class="pip pip-green"></div>
+  <div style="font-size:12.5px;font-weight:500;color:rgba(0,0,0,0.60);letter-spacing:-0.01em;flex-shrink:0;">1280 × 720</div>
+  <div class="sep"></div>
+
+  <div class="tag on ic-chip" title="Camera">
+    <svg width="16" height="16" viewBox="0 0 20 16" fill="rgba(0,0,0,0.72)"><use href="#ic-camera"/></svg>
+  </div>
+  <div class="tag off ic-chip" title="Teleprompter">
+    <svg width="16" height="16" viewBox="0 0 18 14" fill="rgba(0,0,0,0.30)"><use href="#ic-teleprompter"/></svg>
+  </div>
+  <div class="tag on ic-chip" title="Microphone">
+    <svg width="16" height="16" viewBox="0 0 12 20" fill="rgba(0,0,0,0.72)" stroke="rgba(0,0,0,0.72)"><use href="#ic-mic"/></svg>
+  </div>
+
+  <div class="tag off ic-chip" title="Pick Area">
+    <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"><use href="#ic-pick"/></svg>
+  </div>
+  <div class="sep"></div>
+  <div class="btn-cta">
+    <svg width="10" height="10" viewBox="0 0 14 14" fill="rgba(255,59,48,0.90)"><use href="#ic-record"/></svg>
+    Record
+  </div>
+</div>
+
+<div class="section">② Recording HUD</div>
+<div class="rec-hud glass-hud">
+  <div class="rec-label">
+    <div class="pip pip-red"></div>REC
+  </div>
+  <div class="rec-timer">02:47</div>
+  <div class="sep-hud"></div>
+  <div class="btn-stop">
+    <svg width="10" height="10" viewBox="0 0 12 12" fill="rgba(0,0,0,0.72)"><use href="#ic-stop"/></svg>
+    Stop
+  </div>
+</div>
+
+<div class="section">③ Completion card</div>
+<div class="comp-card glass">
+  <div class="thumb">
+    <div class="play-btn">
+      <svg width="11" height="13" viewBox="0 0 12 14" fill="rgba(0,0,0,0.50)"><use href="#ic-play"/></svg>
+    </div>
+  </div>
+  <div class="file-meta" style="font-size:12.5px;color:rgba(0,0,0,0.50);margin-bottom:12px;">
+    <span>02:47</span>
+    <span style="color:rgba(0,0,0,0.18)">·</span>
+    <span>284 MB</span>
+  </div>
+  <div class="comp-actions">
+    <div class="comp-row">
+      <div class="comp-btn">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"><use href="#ic-redo"/></svg>
+        Redo
+      </div>
+      <div class="comp-btn">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="rgba(0,0,0,0.55)"><use href="#ic-trim"/></svg>
+        Trim
+      </div>
+      <div class="comp-btn">
+        <svg width="12" height="14" viewBox="0 0 16 20" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"><use href="#ic-share"/></svg>
+        Share
+      </div>
+    </div>
+    <div class="comp-btn primary">Open in Studio →</div>
+  </div>
+</div>
+
+</body>
+</html>

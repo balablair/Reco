@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    /* macOS Sequoia-style wallpaper — gives vibrancy something to work with */
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(160,200,255,0.45) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 30%, rgba(180,220,190,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse at 55% 85%, rgba(220,200,255,0.25) 0%, transparent 45%),
+      linear-gradient(150deg, #c5daf0 0%, #d2e8d4 45%, #dcd4f0 100%);
+    min-height: 100vh;
+    padding: 52px;
+    color: rgba(0,0,0,0.85);
+  }
+
+  /* ────────────────────────────────────────
+     LIQUID GLASS MATERIAL
+     Light variant — Apple's regular vibrancy
+  ──────────────────────────────────────── */
+  .glass {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(40px) saturate(2.0) brightness(1.04);
+    -webkit-backdrop-filter: blur(40px) saturate(2.0) brightness(1.04);
+    /* Liquid Glass border: top specular edge + subtle base */
+    border: 1px solid rgba(255,255,255,0.90);
+    border-bottom-color: rgba(0,0,0,0.08);
+    border-right-color: rgba(0,0,0,0.05);
+    /* Inner top highlight = glass thickness */
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.95),
+      inset 0 -0.5px 0 rgba(0,0,0,0.06),
+      0 2px 12px rgba(0,0,0,0.08),
+      0 8px 40px rgba(0,0,0,0.07);
+  }
+
+  /* HUD variant — used for recording pill (stays visible over any content) */
+  .glass-hud {
+    background: rgba(28,28,30,0.78);
+    backdrop-filter: blur(40px) saturate(1.8) brightness(0.9);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8) brightness(0.9);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-top-color: rgba(255,255,255,0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -0.5px 0 rgba(0,0,0,0.25),
+      0 4px 20px rgba(0,0,0,0.28),
+      0 1px 4px rgba(0,0,0,0.18);
+  }
+
+  .section {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.09em; color: rgba(0,0,0,0.30);
+    margin-bottom: 12px; margin-top: 40px;
+  }
+  .section:first-of-type { margin-top: 0; }
+
+  /* ────────────────────────────────────────
+     PREP BAR
+  ──────────────────────────────────────── */
+  .prep-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 10px 16px;
+    border-radius: 100px;
+  }
+
+  .pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pip-green { background: #28cd41; box-shadow: 0 0 0 2.5px rgba(40,205,65,0.20); }
+  .pip-red   { background: #ff3b30; box-shadow: 0 0 0 2.5px rgba(255,59,48,0.20);
+               animation: blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .bar-info { flex:1; min-width:0; }
+  .bar-title { font-size: 13px; font-weight: 570; color: rgba(0,0,0,0.85); letter-spacing: -0.015em; line-height: 1.25; }
+  .bar-sub   { font-size: 11px; color: rgba(0,0,0,0.38); margin-top: 1.5px; }
+
+  .sep {
+    width: 1px; height: 22px; flex-shrink: 0; margin: 0 3px;
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.12), transparent);
+  }
+  .sep-hud {
+    width: 1px; height: 20px; flex-shrink: 0; margin: 0 2px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.20), transparent);
+  }
+
+  /* Pill toggles — SF-style segmented feel */
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 440;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    letter-spacing: -0.01em;
+    transition: background 0.12s;
+  }
+  .tag.on {
+    background: rgba(0,0,0,0.08);
+    border: 0.5px solid rgba(0,0,0,0.11);
+    color: rgba(0,0,0,0.82);
+    box-shadow: inset 0 0.5px 0 rgba(0,0,0,0.06);
+  }
+  .tag.off {
+    background: transparent;
+    border: 0.5px solid transparent;
+    color: rgba(0,0,0,0.32);
+  }
+
+  /* SF-style borderless action */
+  .btn-text {
+    padding: 5px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 450;
+    background: transparent; border: none;
+    color: #007aff; cursor: pointer; flex-shrink: 0;
+    letter-spacing: -0.01em;
+  }
+
+  /* Liquid Glass primary button — frosted white pill on dark bg, dark pill on light bg */
+  .btn-cta {
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 7px;
+    letter-spacing: -0.015em;
+    /* On light bg: dark filled = strong contrast */
+    background: rgba(0,0,0,0.82);
+    color: rgba(255,255,255,0.95);
+    border: 0.5px solid rgba(0,0,0,0.70);
+    box-shadow:
+      inset 0 0.5px 0 rgba(255,255,255,0.10),
+      0 1px 3px rgba(0,0,0,0.22),
+      0 3px 10px rgba(0,0,0,0.12);
+  }
+
+  /* ────────────────────────────────────────
+     REC HUD
+  ──────────────────────────────────────── */
+  .rec-hud {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    border-radius: 100px;
+  }
+
+  .rec-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700;
+    color: #ff453a;
+    letter-spacing: 0.05em;
+  }
+  .rec-timer {
+    font-size: 13px; font-weight: 500;
+    color: rgba(255,255,255,0.82);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  /* HUD secondary tag */
+  .tag-hud {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 7px;
+    font-size: 11px; font-weight: 450;
+    background: rgba(255,255,255,0.12);
+    border: 0.5px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.75);
+    white-space: nowrap;
+  }
+  /* HUD stop button — white fill on dark bg */
+  .btn-stop {
+    padding: 6px 14px; border-radius: 9px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.90);
+    color: rgba(0,0,0,0.82);
+    border: 0.5px solid rgba(255,255,255,0.70);
+    cursor: pointer;
+    box-shadow:
+      inset 0 0.5px 0 rgba(255,255,255,0.95),
+      0 1px 3px rgba(0,0,0,0.22);
+  }
+
+  /* ────────────────────────────────────────
+     COMPLETION CARD
+  ──────────────────────────────────────── */
+  .comp-card {
+    border-radius: 20px;
+    padding: 14px;
+    width: 310px;
+  }
+
+  .thumb {
+    width: 100%; height: 78px; border-radius: 12px;
+    /* Inset glass thumbnail */
+    background: rgba(0,0,0,0.04);
+    border: 0.5px solid rgba(0,0,0,0.09);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 11px;
+  }
+  .play-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(0,0,0,0.07);
+    border: 0.5px solid rgba(0,0,0,0.13);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; padding-left: 2px;
+    color: rgba(0,0,0,0.45);
+  }
+
+  .file-meta {
+    font-size: 11.5px; color: rgba(0,0,0,0.38);
+    margin-bottom: 11px; display: flex; gap: 8px; align-items: center;
+  }
+  .file-name-row {
+    font-size: 13px; font-weight: 550; color: rgba(0,0,0,0.82);
+    margin-bottom: 3px; letter-spacing: -0.01em;
+  }
+
+  .comp-actions { display: flex; flex-direction: column; gap: 6px; }
+  .comp-row { display: flex; gap: 6px; }
+
+  /* Secondary actions — icon + short label, single line guaranteed */
+  .comp-btn {
+    flex: 1; padding: 9px 6px; border-radius: 10px;
+    font-size: 12px; font-weight: 450; text-align: center; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    background: rgba(0,0,0,0.05);
+    border: 0.5px solid rgba(0,0,0,0.10);
+    color: rgba(0,0,0,0.60);
+    white-space: nowrap;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.80);
+  }
+  .comp-btn.primary {
+    padding: 10px 8px;
+    background: rgba(0,0,0,0.82);
+    color: rgba(255,255,255,0.95);
+    border-color: rgba(0,0,0,0.70); font-weight: 600;
+    box-shadow:
+      inset 0 0.5px 0 rgba(255,255,255,0.10),
+      0 1px 4px rgba(0,0,0,0.22);
+  }
+
+  hr { border: none; border-top: 1px solid rgba(0,0,0,0.07); margin: 44px 0; }
+
+  /* ────────────────────────────────────────
+     DESKTOP MOCKUP
+  ──────────────────────────────────────── */
+  .mocks { display: flex; gap: 18px; max-width: 940px; }
+  .mock-col { flex: 1; }
+
+  .desktop {
+    position: relative; border-radius: 14px; overflow: hidden;
+    height: 286px;
+    background:
+      radial-gradient(ellipse at 25% 45%, rgba(160,200,255,0.40) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(170,220,180,0.30) 0%, transparent 45%),
+      linear-gradient(150deg, #c8dcf0 0%, #d4e9d6 55%, #dcd4f0 100%);
+    border: 1px solid rgba(255,255,255,0.70);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
+
+  .dc { position: absolute; inset: 0; padding: 14px; display:flex; flex-direction:column; gap:9px; }
+  .dr { display:flex; gap:9px; }
+  .db {
+    border-radius: 9px;
+    background: rgba(255,255,255,0.52);
+    border: 0.5px solid rgba(255,255,255,0.82);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .rec-outline {
+    position: absolute; inset: 9px;
+    border: 1.5px solid rgba(255,59,48,0.45);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(255,59,48,0.10);
+  }
+
+  .float-bottom { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); white-space:nowrap; }
+  .float-top    { position:absolute; top:14px;    left:50%; transform:translateX(-50%); white-space:nowrap; }
+  .float-br     { position:absolute; bottom:14px; right:14px; }
+
+  .mock-label { text-align:center; font-size:10px; color:rgba(0,0,0,0.30); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div style="font-size:15px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px;">CreatorRecorder</div>
+<div style="font-size:12px;color:rgba(0,0,0,0.32);margin-bottom:44px;">macOS native · Liquid Glass · SF Pro</div>
+
+<!-- ① PREP BAR -->
+<div class="section">① Preparation</div>
+<div class="prep-bar glass">
+  <div class="pip pip-green"></div>
+  <div class="bar-info">
+    <div class="bar-title">Ready to Record</div>
+    <div class="bar-sub">Built-in Display · 1280 × 720</div>
+  </div>
+  <div class="sep"></div>
+  <div class="tag on">📷 Camera</div>
+  <div class="tag off">📝 Teleprompter</div>
+  <div class="tag on">🎙 Mic</div>
+  <div class="sep"></div>
+  <div class="btn-text">✂ Pick</div>
+  <div class="btn-cta">⏺ Record</div>
+</div>
+
+<!-- ② REC HUD -->
+<div class="section">② Recording</div>
+<div class="rec-hud glass-hud">
+  <div class="rec-label"><div class="pip pip-red"></div>REC</div>
+  <div class="rec-timer">02:47</div>
+  <div class="sep-hud"></div>
+  <div class="tag-hud">🎙 Mic</div>
+  <div class="sep-hud"></div>
+  <div class="btn-stop">⏹ Stop</div>
+</div>
+
+<!-- ③ COMPLETION -->
+<div class="section">③ Completion</div>
+<div class="comp-card glass">
+  <div class="thumb"><div class="play-btn">▶</div></div>
+  <div class="file-name-row">session_0420.mov</div>
+  <div class="file-meta">
+    <span>02:47</span>
+    <span style="color:rgba(0,0,0,0.18)">·</span>
+    <span>284 MB</span>
+  </div>
+  <div class="comp-actions">
+    <div class="comp-row">
+      <!-- icon + 1~2字短标签，保证单行 -->
+      <div class="comp-btn">↩ Redo</div>
+      <div class="comp-btn">✂ Trim</div>
+      <div class="comp-btn">↗ Share</div>
+    </div>
+    <div class="comp-btn primary">Open in Studio →</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- MOCKUPS -->
+<div class="section">In context — macOS Sequoia desktop</div>
+<div class="mocks">
+
+  <div class="mock-col">
+    <div class="desktop">
+      <div class="dc">
+        <div class="dr"><div class="db" style="height:44px;flex:2"></div><div class="db" style="height:44px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:56px;flex:1"></div><div class="db" style="height:56px;flex:3"></div></div>
+        <div class="dr"><div class="db" style="height:36px;flex:1"></div><div class="db" style="height:36px;flex:1"></div><div class="db" style="height:36px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:36px;flex:2"></div><div class="db" style="height:36px;flex:1"></div></div>
+      </div>
+      <div class="float-bottom">
+        <div class="prep-bar glass" style="transform:scale(0.74);transform-origin:bottom center;width:540px;padding:9px 9px 9px 15px;">
+          <div class="pip pip-green"></div>
+          <div class="bar-info"><div class="bar-title" style="font-size:12px;">Ready to Record</div><div class="bar-sub" style="font-size:10.5px;">Built-in · 1280 × 720</div></div>
+          <div class="sep"></div>
+          <div class="tag on" style="font-size:11.5px;padding:4px 10px;">📷 Camera</div>
+          <div class="tag on" style="font-size:11.5px;padding:4px 10px;">🎙 Mic</div>
+          <div class="sep"></div>
+          <div class="btn-text" style="font-size:11.5px;">✂ Pick</div>
+          <div class="btn-cta" style="font-size:12px;padding:7px 15px;gap:6px;border-radius:10px;">⏺ Record</div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">Preparation — bar at bottom</div>
+  </div>
+
+  <div class="mock-col">
+    <div class="desktop">
+      <div class="dc">
+        <div class="dr"><div class="db" style="height:44px;flex:2"></div><div class="db" style="height:44px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:56px;flex:1"></div><div class="db" style="height:56px;flex:3"></div></div>
+        <div class="dr"><div class="db" style="height:36px;flex:1"></div><div class="db" style="height:36px;flex:1"></div><div class="db" style="height:36px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:36px;flex:2"></div><div class="db" style="height:36px;flex:1"></div></div>
+      </div>
+      <div class="rec-outline"></div>
+      <div class="float-top">
+        <div class="rec-hud glass-hud" style="transform:scale(0.82);transform-origin:top center;">
+          <div class="rec-label"><div class="pip pip-red"></div>REC</div>
+          <div class="rec-timer">02:47</div>
+          <div class="sep-hud"></div>
+          <div class="btn-stop" style="font-size:11.5px;padding:5px 12px;">⏹ Stop</div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">Recording — HUD + outline</div>
+  </div>
+
+  <div class="mock-col">
+    <div class="desktop">
+      <div class="dc">
+        <div class="dr"><div class="db" style="height:44px;flex:2"></div><div class="db" style="height:44px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:56px;flex:1"></div><div class="db" style="height:56px;flex:3"></div></div>
+        <div class="dr"><div class="db" style="height:36px;flex:1"></div><div class="db" style="height:36px;flex:1"></div><div class="db" style="height:36px;flex:1"></div></div>
+        <div class="dr"><div class="db" style="height:36px;flex:2"></div><div class="db" style="height:36px;flex:1"></div></div>
+      </div>
+      <div class="float-br">
+        <div class="comp-card glass" style="transform:scale(0.74);transform-origin:bottom right;width:272px;padding:12px;border-radius:18px;">
+          <div class="thumb" style="height:62px;margin-bottom:9px;"><div class="play-btn">▶</div></div>
+          <div class="file-name-row" style="font-size:12px;">session_0420.mov</div>
+          <div class="file-meta" style="font-size:10.5px;margin-bottom:9px;"><span>02:47</span><span style="color:rgba(0,0,0,0.18)">·</span><span>284 MB</span></div>
+          <div class="comp-actions" style="gap:5px;">
+            <div class="comp-row" style="gap:5px;">
+              <div class="comp-btn" style="font-size:11.5px;padding:7px 5px;">↩ Redo</div>
+              <div class="comp-btn" style="font-size:11.5px;padding:7px 5px;">✂ Trim</div>
+              <div class="comp-btn" style="font-size:11.5px;padding:7px 5px;">↗ Share</div>
+            </div>
+            <div class="comp-btn primary" style="font-size:11.5px;padding:8px;">Open in Studio →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">Done — result card</div>
+  </div>
+
+</div>
+
+</body>
+</html>

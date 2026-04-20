@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif;
+    background: #1a1a1a;
+    min-height: 100vh;
+    padding: 48px;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 650;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.88);
+  }
+  .subtitle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.32);
+    margin-bottom: 44px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 10px;
+    margin-top: 36px;
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* =============================================
+     LIQUID GLASS — monochrome
+     Light: white glass on dark background
+     Dark: near-black pill
+  ============================================= */
+
+  .lg {
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.20);
+    border-top-color: rgba(255,255,255,0.36);
+    border-bottom-color: rgba(0,0,0,0.20);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.22),
+      inset 0 -1px 0 rgba(0,0,0,0.15),
+      0 8px 32px rgba(0,0,0,0.40),
+      0 2px 6px rgba(0,0,0,0.25);
+  }
+
+  .lg-dark {
+    background: rgba(0,0,0,0.60);
+    backdrop-filter: blur(28px) saturate(1.2);
+    -webkit-backdrop-filter: blur(28px) saturate(1.2);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-top-color: rgba(255,255,255,0.18);
+    border-bottom-color: rgba(0,0,0,0.35);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.10),
+      inset 0 -1px 0 rgba(0,0,0,0.25),
+      0 8px 28px rgba(0,0,0,0.50),
+      0 2px 6px rgba(0,0,0,0.30);
+  }
+
+  /* =============================================
+     PREP BAR
+  ============================================= */
+  .prep-bar {
+    border-radius: 22px;
+    padding: 9px 10px 9px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-pip {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #fff;
+    opacity: 0.9;
+    box-shadow: 0 0 6px rgba(255,255,255,0.5);
+  }
+
+  .bar-text { flex: 1; min-width: 0; }
+  .bar-title {
+    font-size: 13px;
+    font-weight: 580;
+    color: rgba(255,255,255,0.88);
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  .bar-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 1px;
+    letter-spacing: 0;
+  }
+
+  .vr {
+    width: 1px;
+    height: 22px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.16), transparent);
+    flex-shrink: 0;
+    margin: 0 2px;
+  }
+
+  /* Notion-style toggles */
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 490;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+    transition: all 0.12s;
+  }
+  .toggle.on {
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.85);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  .toggle.off {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.25);
+  }
+
+  .btn-pick {
+    padding: 6px 11px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 490;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.52);
+    cursor: pointer;
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+  }
+
+  /* Primary CTA — white pill */
+  .btn-record {
+    padding: 7px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 640;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.02em;
+    background: rgba(255,255,255,0.96);
+    color: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,255,255,1);
+    border-bottom-color: rgba(180,180,180,0.7);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.8),
+      inset 0 -1px 0 rgba(0,0,0,0.06),
+      0 3px 12px rgba(0,0,0,0.30);
+  }
+  .rec-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    opacity: 0.7;
+  }
+
+  /* =============================================
+     REC HUD
+  ============================================= */
+  .rec-hud {
+    border-radius: 100px;
+    padding: 7px 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 680;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.06em;
+  }
+  .rec-blink {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0.9;
+    animation: blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.2; }
+  }
+
+  .rec-timer {
+    font-size: 13px;
+    font-weight: 580;
+    color: rgba(255,255,255,0.80);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-stop {
+    padding: 5px 13px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 620;
+    background: rgba(255,255,255,0.92);
+    color: rgba(0,0,0,0.82);
+    border: none;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.8),
+      0 2px 8px rgba(0,0,0,0.28);
+  }
+
+  /* =============================================
+     COMPLETION CARD
+  ============================================= */
+  .comp-card {
+    border-radius: 20px;
+    padding: 12px;
+    width: 320px;
+  }
+
+  .comp-thumb {
+    width: 100%;
+    height: 72px;
+    border-radius: 11px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    margin-bottom: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comp-play {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    padding-left: 2px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .comp-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.32);
+    margin-bottom: 9px;
+  }
+
+  .comp-actions { display: flex; flex-direction: column; gap: 5px; }
+  .comp-row { display: flex; gap: 5px; }
+
+  .comp-btn {
+    flex: 1;
+    padding: 8px 8px;
+    border-radius: 11px;
+    font-size: 12px;
+    font-weight: 490;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-top-color: rgba(255,255,255,0.17);
+    color: rgba(255,255,255,0.60);
+    letter-spacing: -0.01em;
+  }
+  .comp-btn.primary {
+    background: rgba(255,255,255,0.93);
+    color: rgba(0,0,0,0.82);
+    border-color: rgba(255,255,255,1);
+    border-bottom-color: rgba(180,180,180,0.5);
+    font-weight: 630;
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.7), 0 2px 10px rgba(0,0,0,0.22);
+  }
+
+  /* =============================================
+     DESKTOP MOCKUPS
+  ============================================= */
+  .mocks-row {
+    display: flex;
+    gap: 20px;
+    max-width: 820px;
+    margin-top: 4px;
+  }
+  .mock-wrap { flex: 1; }
+
+  .desktop {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #2c2c2c;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  /* 假桌面内容 — 纯灰色调 */
+  .fake-desktop {
+    position: absolute;
+    inset: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .fr { display: flex; gap: 9px; }
+  .fb {
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* 录制框 */
+  .rec-frame {
+    position: absolute;
+    inset: 10px;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+
+  .float-bottom {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .float-top {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .float-br {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+  }
+
+  .mock-label {
+    text-align: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.22);
+    margin-top: 7px;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<h2>CreatorRecorder · 浮层视觉方案</h2>
+<p class="subtitle">黑白灰 · Liquid Glass · 纯净</p>
+
+<!-- PREP BAR -->
+<div class="section-label">① 准备态横条</div>
+<div class="prep-bar lg">
+  <div class="status-pip"></div>
+  <div class="bar-text">
+    <div class="bar-title">Ready to Record</div>
+    <div class="bar-sub">Built-in Display · 1280 × 720</div>
+  </div>
+  <div class="vr"></div>
+  <div class="toggle on">Camera</div>
+  <div class="toggle off">Teleprompter</div>
+  <div class="toggle on">Mic</div>
+  <div class="vr"></div>
+  <div class="btn-pick">✂ Pick</div>
+  <div class="btn-record"><div class="rec-dot"></div>Record</div>
+</div>
+
+<!-- REC HUD -->
+<div class="section-label">② 录制小条</div>
+<div class="rec-hud lg-dark">
+  <div class="rec-badge"><div class="rec-blink"></div>REC</div>
+  <div class="rec-timer">02:47</div>
+  <div class="vr"></div>
+  <div class="toggle on" style="padding:4px 9px;font-size:11px;">Mic</div>
+  <div class="vr"></div>
+  <div class="btn-stop">■ Stop</div>
+</div>
+
+<!-- COMPLETION CARD -->
+<div class="section-label">③ 完成态卡片</div>
+<div class="comp-card lg">
+  <div class="comp-thumb"><div class="comp-play">▶</div></div>
+  <div class="comp-meta">
+    <span>session_0420.mov</span>
+    <span>02:47</span>
+    <span>284 MB</span>
+  </div>
+  <div class="comp-actions">
+    <div class="comp-row">
+      <div class="comp-btn">↩ 重录</div>
+      <div class="comp-btn">✂ 编辑</div>
+      <div class="comp-btn">↗ 导出</div>
+    </div>
+    <div class="comp-btn primary">打开 Studio 编辑</div>
+  </div>
+</div>
+
+<!-- DESKTOP MOCKUPS -->
+<div class="section-label">在桌面上的样子</div>
+<div class="mocks-row">
+
+  <div class="mock-wrap">
+    <div class="desktop">
+      <div class="fake-desktop">
+        <div class="fr"><div class="fb" style="height:48px;flex:2"></div><div class="fb" style="height:48px;flex:1"></div></div>
+        <div class="fr"><div class="fb" style="height:60px;flex:1"></div><div class="fb" style="height:60px;flex:3"></div></div>
+        <div class="fr"><div class="fb" style="height:40px;flex:1"></div><div class="fb" style="height:40px;flex:1"></div><div class="fb" style="height:40px;flex:1"></div></div>
+      </div>
+      <div class="float-bottom">
+        <div class="prep-bar lg" style="width:420px;transform:scale(0.78);transform-origin:bottom center;padding:8px 8px 8px 12px;">
+          <div class="status-pip"></div>
+          <div class="bar-text"><div class="bar-title" style="font-size:12px;">Ready</div><div class="bar-sub" style="font-size:10px;">1280 × 720</div></div>
+          <div class="vr"></div>
+          <div class="toggle on" style="font-size:11px;padding:4px 8px;">Camera</div>
+          <div class="toggle on" style="font-size:11px;padding:4px 8px;">Mic</div>
+          <div class="vr"></div>
+          <div class="btn-record" style="font-size:12px;padding:5px 12px;"><div class="rec-dot"></div>Record</div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">准备态 — 横条悬浮底部</div>
+  </div>
+
+  <div class="mock-wrap">
+    <div class="desktop">
+      <div class="fake-desktop">
+        <div class="fr"><div class="fb" style="height:48px;flex:2"></div><div class="fb" style="height:48px;flex:1"></div></div>
+        <div class="fr"><div class="fb" style="height:60px;flex:1"></div><div class="fb" style="height:60px;flex:3"></div></div>
+        <div class="fr"><div class="fb" style="height:40px;flex:1"></div><div class="fb" style="height:40px;flex:1"></div><div class="fb" style="height:40px;flex:1"></div></div>
+      </div>
+      <div class="rec-frame"></div>
+      <div class="float-top">
+        <div class="rec-hud lg-dark" style="transform:scale(0.85);transform-origin:top center;">
+          <div class="rec-badge"><div class="rec-blink"></div>REC</div>
+          <div class="rec-timer">02:47</div>
+          <div class="vr"></div>
+          <div class="btn-stop" style="font-size:11px;padding:4px 11px;">■ Stop</div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">录制中 — HUD 顶部 + 白色边框</div>
+  </div>
+
+  <div class="mock-wrap">
+    <div class="desktop">
+      <div class="fake-desktop">
+        <div class="fr"><div class="fb" style="height:48px;flex:2"></div><div class="fb" style="height:48px;flex:1"></div></div>
+        <div class="fr"><div class="fb" style="height:60px;flex:1"></div><div class="fb" style="height:60px;flex:3"></div></div>
+        <div class="fr"><div class="fb" style="height:40px;flex:1"></div><div class="fb" style="height:40px;flex:1"></div><div class="fb" style="height:40px;flex:1"></div></div>
+      </div>
+      <div class="float-br">
+        <div class="comp-card lg" style="transform:scale(0.78);transform-origin:bottom right;width:280px;">
+          <div class="comp-thumb" style="height:55px;"><div class="comp-play">▶</div></div>
+          <div class="comp-meta" style="font-size:9.5px;">
+            <span>session.mov</span><span>02:47</span><span>284MB</span>
+          </div>
+          <div class="comp-actions">
+            <div class="comp-row">
+              <div class="comp-btn" style="font-size:11px;padding:6px;">↩ 重录</div>
+              <div class="comp-btn" style="font-size:11px;padding:6px;">✂ 编辑</div>
+            </div>
+            <div class="comp-btn primary" style="font-size:11px;padding:7px;">打开 Studio</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mock-label">完成态 — 结果卡片右下角</div>
+  </div>
+
+</div>
+
+</body>
+</html>
