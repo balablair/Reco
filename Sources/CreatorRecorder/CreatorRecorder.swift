@@ -3,14 +3,6 @@ import Observation
 import SwiftUI
 import CreatorRecorderKit
 
-private enum RuntimeConstants {
-    static let floatingPanelSize = CGSize(width: 372, height: 112)
-    static let floatingPanelDefaultOrigin = CGPoint(x: 120, y: 120)
-    static let floatingPanelSnapDistance: CGFloat = 24
-    static let floatingPanelOriginDefaultsKey = "CreatorRecorder.floatingPanelOrigin"
-    static let fallbackVisibleFrame = CGRect(x: 80, y: 80, width: 1440, height: 900)
-}
-
 @MainActor
 final class DesktopRegionPickerWindow: NSWindow {
     override var canBecomeKey: Bool { true }
@@ -97,21 +89,6 @@ final class DesktopRegionPicker: NSObject, ObservableObject, NSWindowDelegate {
         overlayWindow = nil
         onSelection = nil
         onCancel = nil
-    }
-}
-
-@MainActor
-final class FloatingPanelWindow: NSPanel {
-    var onPointerUp: (() -> Void)?
-
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
-
-    override func sendEvent(_ event: NSEvent) {
-        super.sendEvent(event)
-        if event.type == .leftMouseUp {
-            onPointerUp?()
-        }
     }
 }
 
