@@ -7,15 +7,7 @@ import Observation
 public final class AppViewModel {
     private let captureService: any ScreenCaptureServicing
     private let exportService: any PlatformExportServicing
-    public enum Screen: String, CaseIterable, Identifiable {
-        case preparation
-        case recording
-        case editor
-
-        public var id: String { rawValue }
-    }
-
-    public var currentScreen: Screen = .preparation
+    public var phase: AppPhase = .preparation
     public var project: RecordingProject = .newProject(name: "Creator Session")
     public var selectedPlatform: PlatformKind = .douyin
     public var exportSelection: ExportSelection
@@ -33,6 +25,8 @@ public final class AppViewModel {
     public var exportState: ExportState = .idle
     public var playbackState: PlaybackState = .paused
     public var playbackPositionSeconds: Double = 0
+    public var recordingElapsedSeconds: Int = 0
+    private var elapsedTimer: Timer?
 
     public init(
         captureService: any ScreenCaptureServicing = ScreenCaptureService(),
@@ -47,15 +41,9 @@ public final class AppViewModel {
         self.cameraOverlay = .default(in: .defaultSelection)
     }
 
-    public func select(screen: Screen) {
-        if isRecordingActive {
-            guard screen == .recording else { return }
-            currentScreen = .recording
-            return
-        }
-
-        guard screen != .recording else { return }
-        currentScreen = screen
+    public func transitionToPhase(_ newPhase: AppPhase) {
+        guard !isRecordingActive || newPhase == .recording else { return }
+        phase = newPhase
     }
 
     public func select(platform: PlatformKind) {
@@ -255,7 +243,8 @@ public final class AppViewModel {
         guard !isRecordingActive else { return }
 
         recordingState = .recording
-        currentScreen = .recording
+        phase = .recording
+        startElapsedTimer()
         let configuration = makeCaptureSessionConfiguration()
 
         Task { @MainActor in
@@ -263,7 +252,8 @@ public final class AppViewModel {
                 try await captureService.start(configuration: configuration)
             } catch {
                 self.recordingState = .failed(error.localizedDescription)
-                self.currentScreen = .preparation
+                self.phase = .preparation
+                self.stopElapsedTimer()
             }
         }
     }
@@ -272,7 +262,8 @@ public final class AppViewModel {
         guard isRecordingActive else { return }
 
         recordingState = .idle
-        currentScreen = .editor
+        phase = .completion
+        stopElapsedTimer()
         latestRecording = await captureService.stop()
         playbackState = .paused
         playbackPositionSeconds = 0
@@ -330,5 +321,37 @@ public final class AppViewModel {
         let minutes = totalSeconds / 60
         let remainingSeconds = totalSeconds % 60
         return String(format: "%02d:%02d", minutes, remainingSeconds)
+    }
+
+    public var recordingElapsedLabel: String {
+        let m = recordingElapsedSeconds / 60
+        let s = recordingElapsedSeconds % 60
+        return String(format: "%02d:%02d", m, s)
+    }
+
+    public func redo() {
+        guard phase == .completion else { return }
+        latestRecording = nil
+        recordingElapsedSeconds = 0
+        exportState = .idle
+        phase = .preparation
+    }
+
+    public func openInStudio() {
+        phase = .editing
+    }
+
+    private func startElapsedTimer() {
+        recordingElapsedSeconds = 0
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.recordingElapsedSeconds += 1
+            }
+        }
+    }
+
+    private func stopElapsedTimer() {
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
     }
 }

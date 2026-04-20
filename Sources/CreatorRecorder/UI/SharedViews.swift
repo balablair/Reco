@@ -2,23 +2,25 @@ import SwiftUI
 import CreatorRecorderKit
 
 struct ModeSwitcherView: View {
-    let selectedScreen: AppViewModel.Screen
+    let selectedPhase: AppPhase
     let recordingLocked: Bool
-    let onSelect: (AppViewModel.Screen) -> Void
+    let onSelect: (AppPhase) -> Void
+
+    private let phases: [AppPhase] = [.preparation, .recording, .editing]
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(AppViewModel.Screen.allCases) { screen in
+            ForEach(phases, id: \.self) { phase in
                 Button {
-                    onSelect(screen)
+                    onSelect(phase)
                 } label: {
-                    Text(label(for: screen))
+                    Text(label(for: phase))
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(screen == selectedScreen ? Color.black.opacity(0.84) : Color.black.opacity(0.54))
+                        .foregroundStyle(phase == selectedPhase ? Color.black.opacity(0.84) : Color.black.opacity(0.54))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background {
-                            if screen == selectedScreen {
+                            if phase == selectedPhase {
                                 Capsule()
                                     .fill(
                                         LinearGradient(
@@ -31,8 +33,8 @@ struct ModeSwitcherView: View {
                         }
                 }
                 .buttonStyle(.plain)
-                .disabled(recordingLocked && screen != .recording)
-                .opacity(recordingLocked && screen != .recording ? 0.42 : 1)
+                .disabled(recordingLocked && phase != .recording)
+                .opacity(recordingLocked && phase != .recording ? 0.42 : 1)
             }
         }
         .padding(4)
@@ -44,11 +46,12 @@ struct ModeSwitcherView: View {
         .shadow(color: .black.opacity(0.05), radius: 14, y: 4)
     }
 
-    private func label(for screen: AppViewModel.Screen) -> String {
-        switch screen {
+    private func label(for phase: AppPhase) -> String {
+        switch phase {
         case .preparation: return "Prepare"
         case .recording: return "Record"
-        case .editor: return "Edit"
+        case .completion: return "Complete"
+        case .editing: return "Edit"
         }
     }
 }

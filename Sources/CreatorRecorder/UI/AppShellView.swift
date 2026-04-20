@@ -12,13 +12,13 @@ struct AppShellView: View {
             VStack(spacing: 20) {
                 TopBarView(viewModel: viewModel)
                 content
-                if viewModel.currentScreen == .editor {
+                if viewModel.phase == .editing {
                     TrimBarView()
                 }
             }
             .padding(24)
 
-            if viewModel.currentScreen == .editor && viewModel.exportSheetPresented {
+            if viewModel.phase == .editing && viewModel.exportSheetPresented {
                 ExportSheetView(viewModel: viewModel)
                     .frame(width: 320)
                     .padding(.trailing, 24)
@@ -30,13 +30,12 @@ struct AppShellView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch viewModel.currentScreen {
-        case .preparation:
-            PreparationScreenView(viewModel: viewModel)
-        case .recording:
-            RecordingScreenView(viewModel: viewModel)
-        case .editor:
+        switch viewModel.phase {
+        case .editing:
             EditorScreenView(viewModel: viewModel)
+        default:
+            EditorScreenView(viewModel: viewModel)
+                .hidden()
         }
     }
 }

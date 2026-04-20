@@ -275,6 +275,13 @@ public struct RecordingProject: Identifiable, Codable, Sendable {
     }
 }
 
+public enum AppPhase: Equatable {
+    case preparation
+    case recording
+    case completion
+    case editing
+}
+
 public enum RecordingState: Equatable, Sendable {
     case idle
     case recording
