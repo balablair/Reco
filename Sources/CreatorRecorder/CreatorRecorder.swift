@@ -116,112 +116,6 @@ final class FloatingPanelWindow: NSPanel {
 }
 
 @MainActor
-final class FloatingControlPanel: NSObject, NSWindowDelegate {
-    static let shared = FloatingControlPanel()
-
-    private var window: FloatingPanelWindow?
-
-    func show(viewModel: AppViewModel, onOpenStudio: @escaping () -> Void, onQuit: @escaping () -> Void) {
-        let rootView = FloatingControlBarView(viewModel: viewModel, onOpenStudio: onOpenStudio, onQuit: onQuit)
-
-        if let window, let hostingView = window.contentView as? NSHostingView<FloatingControlBarView> {
-            hostingView.rootView = rootView
-            let origin = restoredOrigin(for: window)
-            window.setFrameOrigin(origin)
-            persistWindowOrigin(origin)
-            window.orderFrontRegardless()
-            return
-        }
-
-        let hostingView = NSHostingView(rootView: rootView)
-        let frame = CGRect(origin: RuntimeConstants.floatingPanelDefaultOrigin, size: RuntimeConstants.floatingPanelSize)
-        let window = FloatingPanelWindow(
-            contentRect: frame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        window.contentView = hostingView
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = true
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        window.isMovableByWindowBackground = true
-        window.hidesOnDeactivate = false
-        window.becomesKeyOnlyIfNeeded = true
-        window.delegate = self
-        window.onPointerUp = { [weak self] in
-            self?.snapWindowIfNeeded(animated: true)
-        }
-
-        let origin = restoredOrigin(for: window)
-        window.setFrameOrigin(origin)
-        persistWindowOrigin(origin)
-        window.orderFrontRegardless()
-        self.window = window
-    }
-
-    func windowDidMove(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow else { return }
-        persistWindowOrigin(window.frame.origin)
-    }
-
-    private func snapWindowIfNeeded(animated: Bool) {
-        guard let window else { return }
-        let visibleFrame = visibleFrame(for: window)
-        let targetOrigin = FloatingPanelPlacement.snappedOrigin(
-            proposedOrigin: window.frame.origin,
-            panelSize: window.frame.size,
-            visibleFrame: visibleFrame,
-            snapDistance: RuntimeConstants.floatingPanelSnapDistance
-        )
-        guard targetOrigin != window.frame.origin else { return }
-
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.12
-                window.animator().setFrameOrigin(targetOrigin)
-            }
-        } else {
-            window.setFrameOrigin(targetOrigin)
-        }
-
-        persistWindowOrigin(targetOrigin)
-    }
-
-    private func restoredOrigin(for window: NSWindow) -> CGPoint {
-        let visibleFrame = visibleFrame(for: window)
-        let storedOrigin = loadStoredOrigin() ?? RuntimeConstants.floatingPanelDefaultOrigin
-        return FloatingPanelPlacement.restoredOrigin(
-            storedOrigin: storedOrigin,
-            panelSize: window.frame.size,
-            visibleFrame: visibleFrame
-        )
-    }
-
-    private func visibleFrame(for window: NSWindow) -> CGRect {
-        window.screen?.visibleFrame
-        ?? NSScreen.main?.visibleFrame
-        ?? RuntimeConstants.fallbackVisibleFrame
-    }
-
-    private func loadStoredOrigin() -> CGPoint? {
-        guard
-            let values = UserDefaults.standard.array(forKey: RuntimeConstants.floatingPanelOriginDefaultsKey) as? [Double],
-            values.count == 2
-        else {
-            return nil
-        }
-        return CGPoint(x: values[0], y: values[1])
-    }
-
-    private func persistWindowOrigin(_ origin: CGPoint) {
-        UserDefaults.standard.set([origin.x, origin.y], forKey: RuntimeConstants.floatingPanelOriginDefaultsKey)
-    }
-}
-
-@MainActor
 final class StudioWindowController: NSWindowController, NSWindowDelegate {
     init(viewModel: AppViewModel) {
         let hostingView = NSHostingView(rootView: AppShellView(viewModel: viewModel))
@@ -271,76 +165,142 @@ final class AppRuntime {
     let viewModel = AppViewModel()
 
     private lazy var studioWindowController = StudioWindowController(viewModel: viewModel)
-    private var studioVisibilityState = StudioWindowVisibilityState()
-    private var lastRecordingActive = false
 
     private init() {}
 
     func launch() {
         NSApp.setActivationPolicy(.accessory)
-        lastRecordingActive = viewModel.isRecordingActive
-        observeRecordingState()
-        FloatingControlPanel.shared.show(
+        observePhase()
+
+        Task { @MainActor [weak self] in
+            await self?.viewModel.bootstrap()
+            self?.showPrepBar()
+        }
+    }
+
+    // MARK: - Phase observation
+
+    private func observePhase() {
+        withObservationTracking {
+            _ = viewModel.phase
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.handlePhaseChange()
+                self?.observePhase()
+            }
+        }
+    }
+
+    private func handlePhaseChange() {
+        switch viewModel.phase {
+        case .preparation:
+            RecHUDPanel.shared.hide()
+            RecordingOutlinePanel.shared.hide()
+            CompletionPanel.shared.hide()
+            showPrepBar()
+
+        case .recording:
+            PrepBarPanel.shared.hide()
+            CompletionPanel.shared.hide()
+            let captureFrame = captureScreenFrame()
+            RecordingOutlinePanel.shared.show(frame: captureFrame)
+            RecHUDPanel.shared.show(viewModel: viewModel, captureFrame: captureFrame) { [weak self] in
+                self?.stopRecording()
+            }
+
+        case .completion:
+            RecHUDPanel.shared.hide()
+            RecordingOutlinePanel.shared.hide()
+            PrepBarPanel.shared.hide()
+            showCompletion()
+
+        case .editing:
+            CompletionPanel.shared.hide()
+            studioWindowController.showStudio()
+        }
+    }
+
+    // MARK: - Show helpers
+
+    private func showPrepBar() {
+        PrepBarPanel.shared.show(
             viewModel: viewModel,
-            onOpenStudio: { [weak self] in
-                self?.showStudioIfAvailable()
+            onRecord: { [weak self] in
+                self?.viewModel.startRecordingSession()
+            },
+            onPickArea: { [weak self] in
+                self?.startRegionPicker()
             },
             onQuit: { [weak self] in
                 self?.terminate()
             }
         )
+    }
 
-        Task { @MainActor [weak self] in
-            await self?.viewModel.bootstrap()
-            guard let self else { return }
-            FloatingControlPanel.shared.show(
-                viewModel: self.viewModel,
-                onOpenStudio: { [weak self] in
-                    self?.showStudioIfAvailable()
-                },
-                onQuit: { [weak self] in
-                    self?.terminate()
-                }
-            )
+    private func showCompletion() {
+        CompletionPanel.shared.show(
+            viewModel: viewModel,
+            onRedo: { [weak self] in
+                self?.viewModel.redo()
+            },
+            onTrim: { [weak self] in
+                self?.viewModel.openInStudio()
+            },
+            onShare: { [weak self] in
+                self?.shareRecording()
+            },
+            onOpenInStudio: { [weak self] in
+                self?.viewModel.openInStudio()
+            }
+        )
+    }
+
+    // MARK: - Actions
+
+    private func stopRecording() {
+        Task { await viewModel.stopRecordingSession() }
+    }
+
+    private func startRegionPicker() {
+        PrepBarPanel.shared.hide()
+        viewModel.setRegionSelection(active: true)
+        DesktopRegionPicker.shared.begin(
+            on: viewModel.selectedDisplaySource,
+            onSelection: { [weak self] rect in
+                self?.viewModel.applyScreenSelection(rect)
+                self?.viewModel.setRegionSelection(active: false)
+                self?.showPrepBar()
+            },
+            onCancel: { [weak self] in
+                self?.viewModel.setRegionSelection(active: false)
+                self?.showPrepBar()
+            }
+        )
+    }
+
+    private func shareRecording() {
+        guard let url = viewModel.latestRecording?.fileURL else { return }
+        let picker = NSSharingServicePicker(items: [url])
+        if let window = CompletionPanel.shared.window {
+            picker.show(relativeTo: .zero, of: window.contentView ?? NSView(), preferredEdge: .minY)
         }
     }
 
-    private func observeRecordingState() {
-        withObservationTracking {
-            _ = viewModel.recordingState
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.handleRecordingStateChange()
-                self?.observeRecordingState()
-            }
+    // MARK: - Capture frame
+
+    private func captureScreenFrame() -> CGRect {
+        guard let screen = NSScreen.main else {
+            return CGRect(x: 100, y: 100, width: 1280, height: 720)
         }
-    }
-
-    private func handleRecordingStateChange() {
-        let isRecordingActive = viewModel.isRecordingActive
-        guard isRecordingActive != lastRecordingActive else { return }
-        lastRecordingActive = isRecordingActive
-
-        if isRecordingActive {
-            switch studioVisibilityState.recordingDidStart(studioIsVisible: studioWindowController.isVisible) {
-            case .hide:
-                studioWindowController.hideStudio()
-            case .none, .show:
-                break
-            }
-        } else {
-            switch studioVisibilityState.recordingDidEnd() {
-            case .show:
-                studioWindowController.showStudio()
-            case .none, .hide:
-                break
-            }
-        }
-    }
-
-    func showStudioIfAvailable() {
-        guard !viewModel.isRecordingActive else { return }
-        studioWindowController.showStudio()
+        let region = viewModel.captureRegion
+        let screenHeight = screen.frame.height
+        // captureRegion 使用 AppKit 坐标系（原点在左下）
+        return CGRect(
+            x: region.origin.x,
+            y: screenHeight - region.origin.y - region.size.height,
+            width: region.size.width,
+            height: region.size.height
+        )
     }
 
     func terminate() {
@@ -365,82 +325,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         _ = sender
         return false
-    }
-}
-
-private struct FloatingControlBarView: View {
-    @Bindable var viewModel: AppViewModel
-    let onOpenStudio: () -> Void
-    let onQuit: () -> Void
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Circle()
-                .fill(viewModel.isRecordingActive ? Color.red : Color.black)
-                .frame(width: 10, height: 10)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.floatingControlTitle)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(viewModel.floatingControlSubtitle)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 8)
-
-            HStack(spacing: 8) {
-                Button("Pick") {
-                    DesktopRegionPicker.shared.begin(
-                        on: viewModel.selectedDisplaySource,
-                        onSelection: { rect in
-                            viewModel.applyScreenSelection(rect)
-                        }
-                    )
-                }
-                .buttonStyle(.borderless)
-                .disabled(!viewModel.canAdjustCaptureSetup)
-                .opacity(viewModel.canAdjustCaptureSetup ? 1 : 0.42)
-
-                Button(viewModel.floatingPrimaryActionTitle) {
-                    if viewModel.isRecordingActive {
-                        Task {
-                            await viewModel.stopRecordingSession()
-                        }
-                    } else {
-                        viewModel.startRecordingSession()
-                    }
-                }
-                .buttonStyle(.borderless)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(Capsule().fill(Color.black.opacity(0.92)))
-                .foregroundStyle(.white)
-
-                Button("Studio") {
-                    onOpenStudio()
-                }
-                .buttonStyle(.borderless)
-                .disabled(!viewModel.canAdjustCaptureSetup)
-                .opacity(viewModel.canAdjustCaptureSetup ? 1 : 0.42)
-
-                Button("Quit") {
-                    onQuit()
-                }
-                .buttonStyle(.borderless)
-            }
-            .font(.system(size: 12, weight: .semibold))
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .frame(width: RuntimeConstants.floatingPanelSize.width)
-        .background(.ultraThinMaterial)
-        .overlay {
-            Capsule().stroke(Color.white.opacity(0.72), lineWidth: 1)
-        }
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.16), radius: 24, y: 8)
     }
 }
 
