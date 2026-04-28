@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 // MARK: - TeleprompterPanel
 

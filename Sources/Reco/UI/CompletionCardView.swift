@@ -1,7 +1,7 @@
 import AppKit
 import AVFoundation
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 struct CompletionCardView: View {
     @Bindable var viewModel: AppViewModel

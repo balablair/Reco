@@ -1,5 +1,5 @@
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 struct RecordingScreenView: View {
     let viewModel: AppViewModel

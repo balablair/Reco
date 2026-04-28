@@ -4,18 +4,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "CreatorRecorder",
+    name: "Reco",
     platforms: [
         .macOS(.v14),
     ],
     products: [
         .library(
-            name: "CreatorRecorderKit",
-            targets: ["CreatorRecorderKit"]
+            name: "RecoKit",
+            targets: ["RecoKit"]
         ),
         .executable(
-            name: "CreatorRecorder",
-            targets: ["CreatorRecorder"]
+            name: "Reco",
+            targets: ["Reco"]
         ),
     ],
     dependencies: [
@@ -23,26 +23,26 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "CreatorRecorderKit"
+            name: "RecoKit"
         ),
         .executableTarget(
-            name: "CreatorRecorder",
-            dependencies: ["CreatorRecorderKit"],
+            name: "Reco",
+            dependencies: ["RecoKit"],
             exclude: ["Info.plist", "Resources"],
             linkerSettings: [
                 .unsafeFlags([
                     "-Xlinker", "-sectcreate",
                     "-Xlinker", "__TEXT",
                     "-Xlinker", "__info_plist",
-                    "-Xlinker", "Sources/CreatorRecorder/Info.plist"
+                    "-Xlinker", "Sources/Reco/Info.plist"
                 ])
             ]
         ),
         .testTarget(
-            name: "CreatorRecorderTests",
+            name: "RecoTests",
             dependencies: [
-                "CreatorRecorderKit",
-                "CreatorRecorder",
+                "RecoKit",
+                "Reco",
                 .product(name: "Testing", package: "swift-testing"),
             ]
         ),

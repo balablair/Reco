@@ -5,13 +5,13 @@
 set -e
 
 CONFIG="${1:-debug}"
-BINARY_PATH=".build/arm64-apple-macosx/${CONFIG}/CreatorRecorder"
-APP_DIR="CreatorRecorder.app"
+BINARY_PATH=".build/arm64-apple-macosx/${CONFIG}/Reco"
+APP_DIR="Reco.app"
 CONTENTS="${APP_DIR}/Contents"
 MACOS="${CONTENTS}/MacOS"
 RESOURCES="${CONTENTS}/Resources"
-ICON_SOURCE="Sources/CreatorRecorder/Resources/AppIcon.svg"
-ICON_OUTPUT="Sources/CreatorRecorder/Resources/CreatorRecorder.icns"
+ICON_SOURCE="Sources/Reco/Resources/AppIcon.svg"
+ICON_OUTPUT="Sources/Reco/Resources/Reco.icns"
 
 generate_app_icon() {
     if [ ! -f "${ICON_SOURCE}" ]; then
@@ -21,7 +21,7 @@ generate_app_icon() {
 
     echo "🎨 Generating app icon..."
     local tmp_dir
-    tmp_dir="$(mktemp -d /tmp/creatorrecorder-icon.XXXXXX)"
+    tmp_dir="$(mktemp -d /tmp/reco-icon.XXXXXX)"
     local rendered_png="${tmp_dir}/AppIcon.svg.png"
     local base_png="${tmp_dir}/AppIcon-1024.png"
     local iconset="${tmp_dir}/AppIcon.iconset"
@@ -53,11 +53,11 @@ rm -rf "${APP_DIR}"
 mkdir -p "${MACOS}" "${RESOURCES}"
 
 echo "📋 Copying binary..."
-cp "${BINARY_PATH}" "${MACOS}/CreatorRecorder"
+cp "${BINARY_PATH}" "${MACOS}/Reco"
 
 if [ -f "${ICON_OUTPUT}" ]; then
     echo "🖼  Copying app icon..."
-    cp "${ICON_OUTPUT}" "${RESOURCES}/CreatorRecorder.icns"
+    cp "${ICON_OUTPUT}" "${RESOURCES}/Reco.icns"
 fi
 
 echo "📝 Writing Info.plist..."
@@ -67,13 +67,13 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>CreatorRecorder</string>
+    <string>Reco</string>
     <key>CFBundleIdentifier</key>
-    <string>com.creatorrecorder.app</string>
+    <string>com.reco.app</string>
     <key>CFBundleName</key>
-    <string>CreatorRecorder</string>
+    <string>Reco</string>
     <key>CFBundleIconFile</key>
-    <string>CreatorRecorder</string>
+    <string>Reco</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
     <key>CFBundleShortVersionString</key>
@@ -83,19 +83,19 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSCameraUsageDescription</key>
-    <string>CreatorRecorder 需要访问摄像头，以便在录制时显示画中画（PiP）预览。</string>
+    <string>Reco 需要访问摄像头，以便在录制时显示画中画（PiP）预览。</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>CreatorRecorder 需要访问麦克风，以便在录制时同步录制您的声音。</string>
+    <string>Reco 需要访问麦克风，以便在录制时同步录制您的声音。</string>
     <key>NSScreenCaptureDescription</key>
-    <string>CreatorRecorder 需要屏幕录制权限，以便捕获屏幕内容。</string>
+    <string>Reco 需要屏幕录制权限，以便捕获屏幕内容。</string>
     <key>NSSystemAudioDescription</key>
-    <string>CreatorRecorder 需要录制系统声音，以便在录制视频时同步录制电脑播放的音频。</string>
+    <string>Reco 需要录制系统声音，以便在录制视频时同步录制电脑播放的音频。</string>
 </dict>
 </plist>
 PLIST
 
 echo "🔑 Writing entitlements..."
-cat > /tmp/CreatorRecorder.entitlements << 'ENTITLEMENTS'
+cat > /tmp/Reco.entitlements << 'ENTITLEMENTS'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -121,7 +121,7 @@ ENTITLEMENTS
 # 对于未经公证的开发版 App 反而会导致 ScreenCaptureKit 权限弹窗无法触发）
 echo "✍️  Signing .app bundle (ad-hoc, without Hardened Runtime)..."
 codesign --force --deep --sign - \
-    --entitlements /tmp/CreatorRecorder.entitlements \
+    --entitlements /tmp/Reco.entitlements \
     "${APP_DIR}"
 
 echo "🔓 Removing Gatekeeper quarantine flag..."
@@ -131,4 +131,4 @@ echo ""
 echo "✅ Done! App bundle: ${APP_DIR}"
 echo ""
 echo "🚀 To launch: open ${APP_DIR}"
-echo "   Or:         ${MACOS}/CreatorRecorder"
+echo "   Or:         ${MACOS}/Reco"

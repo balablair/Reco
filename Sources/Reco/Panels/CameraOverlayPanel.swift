@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import AVFoundation
 import os.lock
-import CreatorRecorderKit
+import RecoKit
 
 // MARK: - Panel
 
@@ -985,7 +985,7 @@ final class CameraCaptureView: NSView, AVCaptureVideoDataOutputSampleBufferDeleg
 
     private func makeCameraOutputURL() -> URL {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CreatorRecorder", isDirectory: true)
+            .appendingPathComponent("Reco", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("camera-\(UUID().uuidString).mp4")
     }

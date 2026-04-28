@@ -3,7 +3,7 @@ import AVFoundation
 import AVKit
 import SwiftUI
 import UniformTypeIdentifiers
-import CreatorRecorderKit
+import RecoKit
 
 // MARK: - 主编辑界面
 

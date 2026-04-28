@@ -19,7 +19,7 @@ private struct AppUserPreferences: Codable {
 // MARK: - 持久化存储
 
 private enum AppStorage {
-    static let preferencesKey = "CreatorRecorder.UserPreferences.v1"
+    static let preferencesKey = "Reco.UserPreferences.v1"
 
     static func load() -> AppUserPreferences? {
         guard let data = UserDefaults.standard.data(forKey: preferencesKey) else { return nil }

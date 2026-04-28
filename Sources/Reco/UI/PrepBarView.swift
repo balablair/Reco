@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 import ScreenCaptureKit
-import CreatorRecorderKit
+import RecoKit
 
 struct PrepBarView: View {
     @Bindable var viewModel: AppViewModel
@@ -169,7 +169,7 @@ struct PrepBarView: View {
         .overlay(Capsule().stroke(Color.white.opacity(0.9), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.18), radius: 28, y: 10)
         .contextMenu {
-            Button("Quit CreatorRecorder") { actions.onQuit() }
+            Button("Quit Reco") { actions.onQuit() }
         }
         .task {
             await checkPermissions()

@@ -1,5 +1,5 @@
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 struct AppShellView: View {
     @State var viewModel: AppViewModel

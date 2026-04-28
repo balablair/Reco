@@ -1,5 +1,5 @@
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 struct RecHUDView: View {
     @Bindable var viewModel: AppViewModel

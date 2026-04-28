@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 // MARK: - 可观察的回调容器（让 PrepBarView 可以在复用 panel 时更新回调）
 

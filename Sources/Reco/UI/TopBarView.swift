@@ -1,5 +1,5 @@
 import SwiftUI
-import CreatorRecorderKit
+import RecoKit
 
 struct TopBarView: View {
     let viewModel: AppViewModel

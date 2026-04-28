@@ -1,6 +1,6 @@
 import SwiftUI
 import AppKit
-import CreatorRecorderKit
+import RecoKit
 
 struct ModeSwitcherView: View {
     let selectedPhase: AppPhase
@@ -393,7 +393,7 @@ struct ExportSheetView: View {
             InspectorCard(title: "Output") {
                 InspectorRow(title: "Codec", value: "H.264")
                 InspectorRow(title: "Resolution", value: primaryExportResolution)
-                InspectorRow(title: "Folder", value: "Temp/CreatorRecorder/Exports")
+                InspectorRow(title: "Folder", value: "Temp/Reco/Exports")
             }
 
             HStack(spacing: 10) {

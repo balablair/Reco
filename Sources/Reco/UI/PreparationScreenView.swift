@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 import CoreGraphics
-import CreatorRecorderKit
+import RecoKit
 
 struct PreparationScreenView: View {
     let viewModel: AppViewModel

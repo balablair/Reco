@@ -3,18 +3,18 @@ import AVFoundation
 import Observation
 import SwiftUI
 import ScreenCaptureKit
-import CreatorRecorderKit
+import RecoKit
 
-enum CreatorRecorderStatusItemIntent: Equatable {
+enum RecoStatusItemIntent: Equatable {
     case reopenPrimaryInterface
     case terminateApp
 }
 
-enum CreatorRecorderStatusItemAction: Equatable {
+enum RecoStatusItemAction: Equatable {
     case primaryButtonTap
     case quitMenuItem
 
-    var resolvedIntent: CreatorRecorderStatusItemIntent {
+    var resolvedIntent: RecoStatusItemIntent {
         switch self {
         case .primaryButtonTap:
             return .reopenPrimaryInterface
@@ -24,17 +24,17 @@ enum CreatorRecorderStatusItemAction: Equatable {
     }
 }
 
-func statusItemPrimaryClickIntent() -> CreatorRecorderStatusItemIntent {
-    CreatorRecorderStatusItemAction.primaryButtonTap.resolvedIntent
+func statusItemPrimaryClickIntent() -> RecoStatusItemIntent {
+    RecoStatusItemAction.primaryButtonTap.resolvedIntent
 }
 
 @MainActor
-final class CreatorRecorderStatusItemController: NSObject {
+final class RecoStatusItemController: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    private let performIntent: (CreatorRecorderStatusItemIntent) -> Void
+    private let performIntent: (RecoStatusItemIntent) -> Void
     private let statusMenu = NSMenu()
 
-    init(performIntent: @escaping (CreatorRecorderStatusItemIntent) -> Void) {
+    init(performIntent: @escaping (RecoStatusItemIntent) -> Void) {
         self.performIntent = performIntent
         super.init()
         configureStatusItem()
@@ -43,12 +43,12 @@ final class CreatorRecorderStatusItemController: NSObject {
     private func configureStatusItem() {
         statusItem.isVisible = true
         if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: "record.circle.fill", accessibilityDescription: "CreatorRecorder")
-                ?? NSImage(systemSymbolName: "record.circle", accessibilityDescription: "CreatorRecorder")
+            let image = NSImage(systemSymbolName: "record.circle.fill", accessibilityDescription: "Reco")
+                ?? NSImage(systemSymbolName: "record.circle", accessibilityDescription: "Reco")
             image?.isTemplate = true
             button.image = image
             button.imagePosition = .imageOnly
-            button.toolTip = "CreatorRecorder"
+            button.toolTip = "Reco"
             button.target = self
             button.action = #selector(handlePrimaryButtonTap)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -57,11 +57,11 @@ final class CreatorRecorderStatusItemController: NSObject {
             NSLog("[StatusItem] failed to access status item button")
         }
 
-        let openItem = NSMenuItem(title: "打开 CreatorRecorder", action: #selector(handlePrimaryButtonTap), keyEquivalent: "")
+        let openItem = NSMenuItem(title: "打开 Reco", action: #selector(handlePrimaryButtonTap), keyEquivalent: "")
         openItem.target = self
         statusMenu.addItem(openItem)
         statusMenu.addItem(.separator())
-        let quitItem = NSMenuItem(title: "退出 CreatorRecorder", action: #selector(handleQuitMenuItem), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "退出 Reco", action: #selector(handleQuitMenuItem), keyEquivalent: "q")
         quitItem.target = self
         statusMenu.addItem(quitItem)
     }
@@ -75,7 +75,7 @@ final class CreatorRecorderStatusItemController: NSObject {
     }
 
     @objc private func handleQuitMenuItem() {
-        performIntent(CreatorRecorderStatusItemAction.quitMenuItem.resolvedIntent)
+        performIntent(RecoStatusItemAction.quitMenuItem.resolvedIntent)
     }
 }
 
@@ -464,7 +464,7 @@ final class StudioWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "CreatorRecorder Studio"
+        window.title = "Reco Studio"
         window.contentView = hostingView
         window.center()
         window.isReleasedWhenClosed = false
@@ -635,11 +635,11 @@ final class AppRuntime {
         let alert = NSAlert()
         alert.messageText = "需要录屏权限"
         alert.informativeText = """
-            CreatorRecorder 无法访问屏幕内容。
+            Reco 无法访问屏幕内容。
 
             请按以下步骤操作：
             1. 点击「前往系统设置」
-            2. 找到 CreatorRecorder，确保开关已打开
+            2. 找到 Reco，确保开关已打开
             3. 如果开关已开但仍报错，请先关掉再重新打开
             4. 完成后回来重新点 Record
             """
@@ -684,7 +684,7 @@ final class AppRuntime {
     private func showRecordingErrorAlert(_ message: String) {
         let alert = NSAlert()
         alert.messageText = "无法开始录制"
-        alert.informativeText = message + "\n\n请前往「系统设置 → 隐私与安全性 → 录屏与系统录音」，确认 CreatorRecorder 已开启权限，然后重启 App 再试。"
+        alert.informativeText = message + "\n\n请前往「系统设置 → 隐私与安全性 → 录屏与系统录音」，确认 Reco 已开启权限，然后重启 App 再试。"
         alert.alertStyle = .warning
         alert.addButton(withTitle: "前往系统设置")
         alert.addButton(withTitle: "取消")
@@ -956,11 +956,11 @@ final class AppRuntime {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let runtime = AppRuntime.shared
-    private var statusItemController: CreatorRecorderStatusItemController?
+    private var statusItemController: RecoStatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = notification
-        statusItemController = CreatorRecorderStatusItemController { [weak self] intent in
+        statusItemController = RecoStatusItemController { [weak self] intent in
             self?.handleStatusItemIntent(intent)
         }
         runtime.launch()
@@ -979,7 +979,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
-    private func handleStatusItemIntent(_ intent: CreatorRecorderStatusItemIntent) {
+    private func handleStatusItemIntent(_ intent: RecoStatusItemIntent) {
         switch intent {
         case .reopenPrimaryInterface:
             runtime.reopenPrimaryInterface()

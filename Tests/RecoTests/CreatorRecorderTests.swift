@@ -4,8 +4,8 @@ import AVFoundation
 import ImageIO
 import UniformTypeIdentifiers
 import Testing
-@testable import CreatorRecorder
-@testable import CreatorRecorderKit
+@testable import Reco
+@testable import RecoKit
 
 private func expectClose(_ lhs: CGFloat, _ rhs: CGFloat, tolerance: CGFloat = 0.0001) {
     #expect(abs(lhs - rhs) <= tolerance)
@@ -489,7 +489,7 @@ func studioPreviewAudioPrefersCameraWhenAvailable() {
 
 @Test("菜单栏图标主按钮会映射为重开主界面动作")
 func statusItemPrimaryTapMapsToReopenAction() {
-    #expect(CreatorRecorderStatusItemAction.primaryButtonTap.resolvedIntent == .reopenPrimaryInterface)
+    #expect(RecoStatusItemAction.primaryButtonTap.resolvedIntent == .reopenPrimaryInterface)
 }
 
 @Test("菜单栏左键点击默认执行重开主界面")
@@ -499,7 +499,7 @@ func statusItemLeftClickDefaultsToPrimaryAction() {
 
 @Test("菜单栏图标菜单项包含退出动作")
 func statusItemQuitMenuMapsToTerminateAction() {
-    #expect(CreatorRecorderStatusItemAction.quitMenuItem.resolvedIntent == .terminateApp)
+    #expect(RecoStatusItemAction.quitMenuItem.resolvedIntent == .terminateApp)
 }
 
 @Test("播放结束后主按钮切换为重播图标")
@@ -1737,7 +1737,7 @@ private enum ExportFrameComparisonError: Error {
 
 private func makeDouyinFrameComparisonContext() throws -> DouyinFrameComparisonContext? {
     let exportsDirectory = FileManager.default.temporaryDirectory
-        .appendingPathComponent("CreatorRecorder", isDirectory: true)
+        .appendingPathComponent("Reco", isDirectory: true)
         .appendingPathComponent("Exports", isDirectory: true)
     let referenceVideoURL = exportsDirectory.appendingPathComponent("douyin-51B7FB32-E4B2-4787-8060-485616C57FDA.mp4")
     guard FileManager.default.fileExists(atPath: referenceVideoURL.path) else {

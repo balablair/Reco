@@ -360,7 +360,7 @@ final class RecordingOutputBox: NSObject, SCRecordingOutputDelegate, RecordingRe
 private enum RecordingFileFactory {
     static func makeOutputURL() -> URL {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CreatorRecorder", isDirectory: true)
+            .appendingPathComponent("Reco", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: nil)
             NSLog("[RecordingFileFactory] created directory: %@", directory.path)
@@ -1623,14 +1623,14 @@ private func copySourceAsset(from sourceURL: URL, kind: SourceAssetKind, preferr
 private extension RecordingFileFactory {
     static func makeVariantOutputURL(for platform: PlatformKind) -> URL {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CreatorRecorder/Exports", isDirectory: true)
+            .appendingPathComponent("Reco/Exports", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: nil)
         return directory.appendingPathComponent("\(platform.rawValue)-\(UUID().uuidString).mp4")
     }
 
     static func makeSourceAssetOutputURL(kind: SourceAssetKind, pathExtension: String) -> URL {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CreatorRecorder/Exports/SourceAssets", isDirectory: true)
+            .appendingPathComponent("Reco/Exports/SourceAssets", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: nil)
         return directory.appendingPathComponent("\(kind.rawValue)-\(UUID().uuidString).\(pathExtension)")
     }
@@ -1638,7 +1638,7 @@ private extension RecordingFileFactory {
     /// 创建临时中间文件 URL（两步导出架构用）
     static func makeTempURL(suffix: String) -> URL {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CreatorRecorder/Temp", isDirectory: true)
+            .appendingPathComponent("Reco/Temp", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: nil)
         return directory.appendingPathComponent("\(suffix)-\(UUID().uuidString).mp4")
     }
