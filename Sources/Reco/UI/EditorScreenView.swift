@@ -2346,6 +2346,10 @@ func playbackPrimaryButtonSymbol(for viewModel: AppViewModel) -> String {
     return "play.fill"
 }
 
+private final class PassthroughAVPlayerView: AVPlayerView {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
 private struct SharedPlayerView: NSViewRepresentable {
     let player: AVPlayer
     let playbackState: PlaybackState
@@ -2355,8 +2359,8 @@ private struct SharedPlayerView: NSViewRepresentable {
     let onSmoothPositionChange: (Double) -> Void
     let onPlaybackFinished: () -> Void
 
-    func makeNSView(context: Context) -> AVPlayerView {
-        let view = AVPlayerView()
+    func makeNSView(context: Context) -> PassthroughAVPlayerView {
+        let view = PassthroughAVPlayerView()
         view.controlsStyle = .none
         view.videoGravity = .resizeAspectFill  // 填满容器，不留黑边
         view.player = player
@@ -2370,7 +2374,8 @@ private struct SharedPlayerView: NSViewRepresentable {
         return view
     }
 
-    func updateNSView(_ nsView: AVPlayerView, context: Context) {
+    func updateNSView(_ nsView: PassthroughAVPlayerView, context: Context) {
+        // 让鼠标事件继续传给外层 SwiftUI 画布，PiP 拖拽和 crop 手柄才能工作
         // player 或 trimEnd 变化时，重新挂载 observer
         let playerChanged = nsView.player !== player
         let trimChanged   = context.coordinator.currentTrimEnd != trimEndSeconds
