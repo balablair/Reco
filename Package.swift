@@ -27,12 +27,22 @@ let package = Package(
         ),
         .executableTarget(
             name: "CreatorRecorder",
-            dependencies: ["CreatorRecorderKit"]
+            dependencies: ["CreatorRecorderKit"],
+            exclude: ["Info.plist", "Resources"],
+            linkerSettings: [
+                .unsafeFlags([
+                    "-Xlinker", "-sectcreate",
+                    "-Xlinker", "__TEXT",
+                    "-Xlinker", "__info_plist",
+                    "-Xlinker", "Sources/CreatorRecorder/Info.plist"
+                ])
+            ]
         ),
         .testTarget(
             name: "CreatorRecorderTests",
             dependencies: [
                 "CreatorRecorderKit",
+                "CreatorRecorder",
                 .product(name: "Testing", package: "swift-testing"),
             ]
         ),

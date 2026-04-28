@@ -1,104 +1,184 @@
+import AppKit
+import AVFoundation
 import SwiftUI
 import CreatorRecorderKit
 
 struct CompletionCardView: View {
     @Bindable var viewModel: AppViewModel
     let onRedo: () -> Void
-    let onTrim: () -> Void
-    let onShare: () -> Void
+    let onExportSource: () -> Void
     let onOpenInStudio: () -> Void
 
+    var thumbnailImage: NSImage? {
+        Self.thumbnailImage(for: viewModel.latestRecording)
+    }
+
+    private var cardModel: RecordingCompletionCardModel {
+        makeRecordingCompletionCardModel(
+            recordingElapsedSeconds: viewModel.recordingElapsedSeconds,
+            sourceExportState: viewModel.sourceExportState
+        )
+    }
+
     var body: some View {
-        VStack(spacing: 12) {
-            // 缩略图
-            thumbnailView
+        VStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                thumbnailView
 
-            // 元数据
-            HStack {
-                Text(metaLabel)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.55))
-                Spacer()
-            }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(cardModel.eyebrow)
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.1)
+                        .foregroundStyle(Color.black.opacity(0.38))
 
-            // 次要操作
-            HStack(spacing: 8) {
-                secondaryButton(label: "Redo", systemImage: "arrow.uturn.left") { onRedo() }
-                secondaryButton(label: "Trim", systemImage: "scissors") { onTrim() }
-                secondaryButton(label: "Share", systemImage: "square.and.arrow.up") { onShare() }
-            }
-
-            // 主操作
-            Button(action: onOpenInStudio) {
-                HStack {
-                    Text("Open in Studio")
-                        .font(.system(size: 14, weight: .semibold))
-                    Spacer()
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 12, weight: .semibold))
+                    Text(cardModel.title)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.primary)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Capsule().fill(Color.black.opacity(0.82)))
-                .foregroundStyle(.white)
+
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: 10) {
+                secondaryButton(label: "重录", action: onRedo)
+                secondaryButton(
+                    label: cardModel.exportSourceButtonTitle,
+                    action: onExportSource,
+                    isEnabled: cardModel.exportSourceButtonEnabled
+                )
+            }
+
+            Button(action: onOpenInStudio) {
+                Text(cardModel.primaryActionTitle)
+                    .font(.system(size: 15, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.black.opacity(0.88))
+                    )
+                    .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
-        .frame(width: 310)
+        .padding(18)
+        .frame(width: 392)
         .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.72), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.68), lineWidth: 0.5)
         )
         .shadow(color: .black.opacity(0.16), radius: 32, y: 12)
     }
 
-    // MARK: - Sub-components
+    private var thumbnailView: some View {
+        ZStack(alignment: .bottomTrailing) {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.18))
+                .overlay {
+                    thumbnailContent
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.4), lineWidth: 0.5)
+                )
+                .frame(width: 112, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            Text(cardModel.durationLabel)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 9)
+                .frame(height: 24)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.76))
+                )
+                .padding(8)
+        }
+    }
 
     @ViewBuilder
-    private var thumbnailView: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.black.opacity(0.06))
-                .frame(height: 80)
-
-            Image(systemName: "play.fill")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.black.opacity(0.38))
+    private var thumbnailContent: some View {
+        if let thumbnailImage {
+            Image(nsImage: thumbnailImage)
+                .resizable()
+                .scaledToFill()
+                .overlay {
+                    LinearGradient(
+                        colors: [Color.clear, Color.black.opacity(0.12)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+        } else {
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.4),
+                    Color.white.opacity(0.18)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .overlay {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.22))
+            }
         }
     }
 
     private var cardBackground: some View {
         Rectangle()
             .fill(.ultraThinMaterial)
-            .overlay(Rectangle().fill(Color.white.opacity(0.3)))
+            .overlay(Rectangle().fill(Color.white.opacity(0.22)))
+    }
+
+    private static func thumbnailImage(for recording: RecordingResult?) -> NSImage? {
+        guard let recording,
+              FileManager.default.fileExists(atPath: recording.fileURL.path) else {
+            return nil
+        }
+
+        let asset = AVURLAsset(url: recording.fileURL)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 224, height: 160)
+
+        let durationSeconds = max(recording.durationSeconds, 0)
+        let captureSecond = min(max(durationSeconds * 0.12, 0), max(durationSeconds - 0.05, 0))
+        let captureTime = CMTime(seconds: captureSecond, preferredTimescale: 600)
+
+        guard let cgImage = try? generator.copyCGImage(at: captureTime, actualTime: nil) else {
+            return nil
+        }
+
+        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }
 
     @ViewBuilder
-    private func secondaryButton(label: String, systemImage: String, action: @escaping () -> Void) -> some View {
+    private func secondaryButton(
+        label: String,
+        action: @escaping () -> Void,
+        isEnabled: Bool = true
+    ) -> some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 14, weight: .medium))
-                Text(label)
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Capsule().fill(Color.black.opacity(0.06)))
-            .foregroundStyle(Color.black.opacity(0.7))
+            Text(label)
+                .font(.system(size: 14, weight: .semibold))
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(Color.white.opacity(isEnabled ? 0.26 : 0.18))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(Color.white.opacity(isEnabled ? 0.4 : 0.26), lineWidth: 0.5)
+                )
+                .foregroundStyle(Color.black.opacity(isEnabled ? 0.72 : 0.38))
         }
         .buttonStyle(.plain)
-    }
-
-    private var metaLabel: String {
-        let duration = viewModel.formatPlaybackTime(Double(viewModel.recordingElapsedSeconds))
-        if let recording = viewModel.latestRecording {
-            let mb = recording.fileSizeBytes / 1_000_000
-            return "\(duration) · \(mb) MB"
-        }
-        return duration
+        .disabled(!isEnabled)
     }
 }

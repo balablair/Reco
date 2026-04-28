@@ -1,4 +1,6 @@
 import SwiftUI
+import AVFoundation
+import CoreGraphics
 import CreatorRecorderKit
 
 struct PreparationScreenView: View {
@@ -10,6 +12,10 @@ struct PreparationScreenView: View {
     @State private var cameraDragStartOrigin: CGPoint?
     @State private var cameraResizeTranslation: CGSize = .zero
     @State private var cameraResizeStartLayout: CameraOverlayLayout?
+
+    // 权限状态
+    @State private var cameraGranted: Bool = true
+    @State private var screenGranted: Bool = true
 
     var body: some View {
         ZStack {
@@ -106,7 +112,9 @@ struct PreparationScreenView: View {
 
                         InspectorCard(title: "Template") {
                             ForEach(ProjectTemplate.allCases) { template in
-                                TemplateRow(title: template.platform.title, subtitle: template.platform.ratioLabel, isActive: template == .xiaohongshu)
+                                TemplateRow(title: template.platform.title, subtitle: template.platform.ratioLabel, isActive: template.platform == viewModel.selectedPlatform) {
+                                    viewModel.select(platform: template.platform)
+                                }
                             }
                         }
 
@@ -135,6 +143,24 @@ struct PreparationScreenView: View {
                             .foregroundStyle(Color.black.opacity(0.58))
                         }
 
+                        // 权限状态 Banner（有问题才显示）
+                        if !screenGranted || !cameraGranted {
+                            PermissionBanner(
+                                screenGranted: screenGranted,
+                                cameraGranted: cameraGranted,
+                                onFixScreen: {
+                                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                },
+                                onFixCamera: {
+                                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                }
+                            )
+                        }
+
                         HStack(spacing: 10) {
                             Button(viewModel.regionSelectionActive ? "Cancel Picking" : "Pick Region") {
                                 cancelOrTogglePicking()
@@ -156,11 +182,19 @@ struct PreparationScreenView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {
             await loadAvailableDisplays()
+            checkPermissions()
         }
     }
 
     private func loadAvailableDisplays() async {
         await viewModel.bootstrap()
+    }
+
+    /// 静默检查权限状态，用于 UI 指示
+    private func checkPermissions() {
+        let camStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        cameraGranted = (camStatus == .authorized || camStatus == .notDetermined)
+        screenGranted = CGPreflightScreenCaptureAccess()
     }
 
     private var activeRegion: CaptureRegion {
@@ -386,6 +420,7 @@ struct PreparationScreenView: View {
         viewModel.setRegionSelection(active: true)
         DesktopRegionPicker.shared.begin(
             on: display,
+            windows: viewModel.availableWindows,
             onSelection: { selectionRect in
                 let configuration = CaptureSessionConfiguration.fromScreenSelection(
                     selectionRect,
@@ -582,6 +617,8 @@ private struct CameraOverlayView: View {
             RoundedRectangle(cornerRadius: 34, style: .continuous).fill(.ultraThinMaterial)
         case .square:
             RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.ultraThinMaterial)
+        case .rectangle:
+            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.ultraThinMaterial)
         }
     }
 
@@ -595,6 +632,9 @@ private struct CameraOverlayView: View {
                 .stroke(Color.white.opacity(0.74), lineWidth: 1)
         case .square:
             RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.74), lineWidth: 1)
+        case .rectangle:
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.white.opacity(0.74), lineWidth: 1)
         }
     }
@@ -641,6 +681,9 @@ private struct CameraShapePicker: View {
         case .square:
             RoundedRectangle(cornerRadius: 2, style: .continuous)
                 .frame(width: 14, height: 14)
+        case .rectangle:
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .frame(width: 22, height: 13)  // 16:9 纵横比
         }
     }
 }

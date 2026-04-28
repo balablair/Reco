@@ -45,6 +45,7 @@ struct RecHUDView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 10)
+        .fixedSize()
         .background(darkGlassBackground)
         .clipShape(Capsule())
         .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.5))

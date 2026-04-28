@@ -9,23 +9,21 @@ final class CompletionPanel: NSObject {
     private var _window: FloatingPanelBase?
     /// 供 AppRuntime 的 shareRecording() 使用
     var window: FloatingPanelBase? { _window }
-    private let preferredSize = CGSize(width: 310, height: 260)
+    private let preferredSize = CGSize(width: 392, height: 212)
 
     private override init() {}
 
     func show(
         viewModel: AppViewModel,
         onRedo: @escaping () -> Void,
-        onTrim: @escaping () -> Void,
-        onShare: @escaping () -> Void,
+        onExportSource: @escaping () -> Void,
         onOpenInStudio: @escaping () -> Void
     ) {
         if let _window, let hosting = _window.contentView as? NSHostingView<CompletionCardView> {
             hosting.rootView = CompletionCardView(
                 viewModel: viewModel,
                 onRedo: onRedo,
-                onTrim: onTrim,
-                onShare: onShare,
+                onExportSource: onExportSource,
                 onOpenInStudio: onOpenInStudio
             )
             _window.orderFrontRegardless()
@@ -35,14 +33,14 @@ final class CompletionPanel: NSObject {
         let rootView = CompletionCardView(
             viewModel: viewModel,
             onRedo: onRedo,
-            onTrim: onTrim,
-            onShare: onShare,
+            onExportSource: onExportSource,
             onOpenInStudio: onOpenInStudio
         )
         let origin = defaultOrigin()
         let frame = CGRect(origin: origin, size: preferredSize)
         let panel = FloatingPanelBase(contentRect: frame)
         panel.contentView = NSHostingView(rootView: rootView)
+        panel.isMovableByWindowBackground = true
         panel.orderFrontRegardless()
         self._window = panel
     }
@@ -57,7 +55,7 @@ final class CompletionPanel: NSObject {
         }
         let frame = screen.visibleFrame
         let x = frame.maxX - preferredSize.width - 24
-        let y = frame.minY + 24
+        let y = frame.minY + 28
         return CGPoint(x: x, y: y)
     }
 }

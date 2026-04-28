@@ -16,7 +16,7 @@ class FloatingPanelBase: NSPanel {
         )
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = true
+        self.hasShadow = false  // 用 SwiftUI .shadow() 替代，避免系统方形阴影泄漏
         self.level = .floating
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         self.isMovableByWindowBackground = false

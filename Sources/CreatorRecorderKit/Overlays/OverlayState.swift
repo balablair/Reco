@@ -1,6 +1,6 @@
 import Foundation
 
-public struct OverlayState: Equatable, Sendable {
+public struct OverlayState: Equatable, Codable, Sendable {
     public var teleprompterVisible = true
     public var cameraVisible = true
     public var hudVisible = true

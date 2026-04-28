@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIconFile</key>
+    <string>CreatorRecorder</string>
+    <key>NSCameraUsageDescription</key>
+    <string>CreatorRecorder 需要访问摄像头，以便在录制时显示画中画（PiP）预览。</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>CreatorRecorder 需要访问麦克风，以便在录制时同步录制您的声音。</string>
+    <key>NSScreenCaptureDescription</key>
+    <string>CreatorRecorder 需要屏幕录制权限，以便捕获屏幕内容。</string>
+</dict>
+</plist>

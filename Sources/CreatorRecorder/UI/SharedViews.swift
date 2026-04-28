@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import CreatorRecorderKit
 
 struct ModeSwitcherView: View {
@@ -116,25 +117,32 @@ struct TemplateRow: View {
     let title: String
     let subtitle: String
     let isActive: Bool
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+        Button {
+            onTap?()
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 13, weight: .medium))
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Circle()
+                    .fill(isActive ? Color.black : Color.clear)
+                    .stroke(Color.black.opacity(0.18), lineWidth: isActive ? 0 : 1)
+                    .frame(width: 16, height: 16)
             }
-            Spacer()
-            Circle()
-                .fill(isActive ? Color.black : Color.clear)
-                .stroke(Color.black.opacity(0.18), lineWidth: isActive ? 0 : 1)
-                .frame(width: 16, height: 16)
+            .padding(12)
+            .background(isActive ? Color.black.opacity(0.06) : Color.black.opacity(0.03))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
-        .padding(12)
-        .background(isActive ? Color.black.opacity(0.06) : Color.black.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .buttonStyle(.plain)
+        .disabled(onTap == nil)
     }
 }
 
@@ -353,7 +361,27 @@ struct ExportSheetView: View {
                         )
                     }
                 }
-            } else if case let .failed(message) = viewModel.exportState {
+            }
+
+            if case let .completed(sourceAssets) = viewModel.sourceExportState {
+                InspectorCard(title: "Source Assets") {
+                    ForEach(sourceAssets, id: \.kind) { asset in
+                        InspectorRow(
+                            title: asset.kind.title,
+                            value: asset.fileURL.lastPathComponent
+                        )
+                    }
+                }
+            }
+
+            if case let .failed(message) = viewModel.exportState {
+                Text(message)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 4)
+            }
+
+            if case let .failed(message) = viewModel.sourceExportState {
                 Text(message)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.red)
@@ -373,6 +401,14 @@ struct ExportSheetView: View {
                     viewModel.toggleExportSheet()
                 }
                 .buttonStyle(SecondaryPillButtonStyle())
+
+                Button(sourceExportButtonTitle) {
+                    Task {
+                        await viewModel.exportSourceAssets()
+                    }
+                }
+                .buttonStyle(SecondaryPillButtonStyle())
+                .disabled(isExporting)
 
                 Button(exportButtonTitle) {
                     Task {
@@ -403,10 +439,121 @@ struct ExportSheetView: View {
         if case .exporting = viewModel.exportState {
             return true
         }
+        if case .exporting = viewModel.sourceExportState {
+            return true
+        }
         return false
     }
 
     private var exportButtonTitle: String {
-        isExporting ? "Exporting..." : "Export"
+        if case .exporting = viewModel.exportState {
+            return "Exporting..."
+        }
+        return "Export"
+    }
+
+    private var sourceExportButtonTitle: String {
+        if case .exporting = viewModel.sourceExportState {
+            return "Exporting Sources..."
+        }
+        return "Source Files"
+    }
+}
+
+// MARK: - PermissionBanner
+
+/// 权限状态提示卡片 —— 仅在有权限被拒时显示，风格与 InspectorCard 保持一致
+struct PermissionBanner: View {
+    let screenGranted: Bool
+    let cameraGranted: Bool
+    let onFixScreen: () -> Void
+    let onFixCamera: () -> Void
+
+    private var allGranted: Bool { screenGranted && cameraGranted }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // 标题行
+            HStack(spacing: 6) {
+                Image(systemName: allGranted ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(allGranted ? Color.black.opacity(0.25) : Color.black.opacity(0.35))
+                Text("Permissions")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            if allGranted {
+                // 全部授权：显示 All clear
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(Color.black.opacity(0.1))
+                        .frame(width: 2.5, height: 24)
+                    Text("All clear")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.black.opacity(0.4))
+                }
+            } else {
+                // 各权限行
+                if !screenGranted {
+                    permissionRow(
+                        icon: "display",
+                        title: "Screen Recording",
+                        action: onFixScreen
+                    )
+                }
+                if !cameraGranted {
+                    permissionRow(
+                        icon: "camera",
+                        title: "Camera",
+                        action: onFixCamera
+                    )
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func permissionRow(
+        icon: String,
+        title: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 10) {
+            // 左侧细竖线指示器
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(Color.black.opacity(0.18))
+                .frame(width: 2.5, height: 28)
+
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.black.opacity(0.45))
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.75))
+                Text("Not authorized")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.black.opacity(0.35))
+            }
+
+            Spacer()
+
+            Button("Enable") {
+                action()
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Color.black.opacity(0.6))
+            .buttonStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.black.opacity(0.05))
+            .clipShape(Capsule())
+        }
     }
 }
