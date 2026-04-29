@@ -259,8 +259,9 @@ private struct CanvasDraggableElement<Content: View>: View {
             }
         }
         .frame(width: rect.width, height: rect.height)
+        .contentShape(Rectangle())
         .position(x: rect.midX, y: rect.midY)
-        .gesture(
+        .highPriorityGesture(
             DragGesture(minimumDistance: 2)
                 .onChanged { value in
                     if !isDragging {
@@ -1025,10 +1026,12 @@ private struct PiPVideoLayer: View {
                     }
             }
         }
+        .contentShape(Rectangle())
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                .allowsHitTesting(false)
         )
     }
 }
